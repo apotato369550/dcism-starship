@@ -48,8 +48,8 @@ export class SocketClient {
         });
     }
 
-    joinGame(username) {
-        this.socket.emit('join_game', username);
+    joinGame(username, options = {}) {
+        this.socket.emit('join_game', { username, ...options });
     }
 
     sendManualCharge() {

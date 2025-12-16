@@ -98,8 +98,8 @@ export class Renderer {
         const uName = tile.unit
             ? this.gameState.shopData[tile.unit].name
             : tile.isHome
-              ? 'CAPITAL'
-              : 'Empty Space';
+                ? 'CAPITAL'
+                : 'Empty Space';
 
         tooltip.classList.remove('hidden');
         tooltip.style.left = clientX + 15 + 'px';

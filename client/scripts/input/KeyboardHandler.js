@@ -18,6 +18,15 @@ export class KeyboardHandler {
 
     onKeyDown(e, onArrowKey, onEnter) {
         const key = e.key.toLowerCase();
+        const isInputFocused =
+            document.activeElement.tagName === 'INPUT' ||
+            document.activeElement.tagName === 'TEXTAREA';
+
+        // Don't process game controls if an input is focused
+        if (isInputFocused) {
+            return;
+        }
+
         this.keys[key] = true;
 
         // Arrow keys for tile selection

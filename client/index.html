@@ -18,7 +18,99 @@
         <link rel="stylesheet" href="/styles/tooltips.css" />
     </head>
     <body>
-        <div id="loginOverlay" class="overlay">
+        <div id="modeOverlay" class="overlay">
+            <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink)">
+                DCISM STARSHIP 2.0
+            </h1>
+            <p style="font-size: 18px; color: #aaa; margin-bottom: 40px; text-align: center">
+                SELECT GAME MODE
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 20px; max-width: 300px">
+                <button
+                    class="big-btn"
+                    id="modeBtn-single"
+                    style="background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan)"
+                >
+                    SINGLE PLAYER
+                </button>
+                <button
+                    class="big-btn"
+                    id="modeBtn-multi"
+                    style="
+                        background: rgba(255, 0, 0, 0.15);
+                        border-color: #ff5555;
+                        cursor: not-allowed;
+                        opacity: 0.5;
+                    "
+                    disabled
+                    title="Coming soon..."
+                >
+                    MULTIPLAYER (COMING SOON)
+                </button>
+                <button
+                    class="big-btn"
+                    id="modeBtn-tutorial"
+                    style="
+                        background: rgba(255, 0, 0, 0.15);
+                        border-color: #ff5555;
+                        cursor: not-allowed;
+                        opacity: 0.5;
+                    "
+                    disabled
+                    title="Coming soon..."
+                >
+                    TUTORIAL (COMING SOON)
+                </button>
+            </div>
+        </div>
+
+        <div id="botsOverlay" class="overlay hidden">
+            <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink)">
+                SINGLE PLAYER
+            </h1>
+            <p style="font-size: 18px; color: #aaa; margin-bottom: 30px; text-align: center">
+                SELECT OPPONENT COUNT
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 15px; max-width: 300px">
+                <button
+                    class="big-btn"
+                    id="botsBtn-0"
+                    style="background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan)"
+                >
+                    0 OPPONENTS
+                </button>
+                <button
+                    class="big-btn"
+                    id="botsBtn-1"
+                    style="background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan)"
+                >
+                    1 OPPONENT
+                </button>
+                <button
+                    class="big-btn"
+                    id="botsBtn-2"
+                    style="background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan)"
+                >
+                    2 OPPONENTS
+                </button>
+                <button
+                    class="big-btn"
+                    id="botsBtn-3"
+                    style="background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan)"
+                >
+                    3 OPPONENTS
+                </button>
+            </div>
+            <button
+                class="big-btn"
+                id="botsBtn-back"
+                style="background: rgba(255, 0, 0, 0.15); border-color: #ff5555; margin-top: 30px"
+            >
+                BACK
+            </button>
+        </div>
+
+        <div id="loginOverlay" class="overlay hidden">
             <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink)">
                 DCISM STARSHIP
             </h1>
@@ -32,56 +124,68 @@
             <button class="big-btn" onclick="location.reload()">REBOOT SYSTEM</button>
         </div>
 
-        <div id="ui-panel">
-            <div id="panel-title">DCISM STARSHIP</div>
-            <h1>COMMAND DECK</h1>
+        <div id="command-deck">
+            <div class="command-deck-header">COMMAND DECK</div>
 
             <div class="stat-display">
                 <span style="color: #aaa">ENERGY</span>
                 <span id="mpDisplay" class="stat-val">0</span>
             </div>
-            <div style="text-align: right; color: #888; font-size: 14px; margin-top: -10px">
+            <div style="text-align: right; color: #888; font-size: 12px; margin-top: -8px">
                 <span id="mpsDisplay" style="color: var(--neon-green)">+0</span> / sec
             </div>
 
-            <div
-                style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 15px;
-                "
-            >
-                <span style="color: #aaa; font-size: 12px">RECHARGE</span>
+            <div style="margin-top: 12px">
+                <span style="color: #aaa; font-size: 11px">RECHARGE</span>
             </div>
             <div id="cd-container"><div id="cd-bar"></div></div>
             <button
                 id="manual-charge-btn"
                 class="big-btn"
-                style="padding: 10px; font-size: 14px; margin-bottom: 10px"
+                style="padding: 8px; font-size: 12px; margin-bottom: 10px"
             >
-                MANUAL CHARGE
+                CHARGE
             </button>
 
-            <div style="display: flex; gap: 8px; margin-bottom: 15px; justify-content: center">
-                <button id="sfx-toggle" class="audio-toggle" style="flex: 1">🔊 SFX</button>
-                <button id="music-toggle" class="audio-toggle" style="flex: 1">🎵 MUSIC</button>
-            </div>
-
-            <div style="overflow-y: auto; flex-grow: 1; padding-right: 5px">
-                <div class="shop-category">Production Modules</div>
-                <div id="shop-prod"></div>
-
-                <div class="shop-category">Defense Systems</div>
-                <div id="shop-mil"></div>
-            </div>
-
-            <div id="inspector" class="hidden">
-                <h3 id="insp-title">Selected Tile</h3>
-                <div id="insp-info" style="font-size: 12px; color: #aaa; margin-bottom: 10px"></div>
-                <button id="btn-demolish" class="action-btn btn-destruct">
-                    Demolish Structure
+            <div style="display: flex; gap: 8px; justify-content: center">
+                <button id="sfx-toggle" class="audio-toggle" style="flex: 1; font-size: 11px">
+                    🔊 SFX
                 </button>
+                <button id="music-toggle" class="audio-toggle" style="flex: 1; font-size: 11px">
+                    🎵 MUSIC
+                </button>
+            </div>
+
+            <div id="inspector" class="hidden" style="margin-top: 12px">
+                <h3 id="insp-title" style="font-size: 12px">Selected Tile</h3>
+                <div id="insp-info" style="font-size: 11px; color: #aaa; margin-bottom: 8px"></div>
+                <button id="btn-demolish" class="action-btn btn-destruct" style="font-size: 11px">
+                    DEMOLISH
+                </button>
+            </div>
+        </div>
+
+        <div id="shop-bar">
+            <div id="shop-items-container"></div>
+        </div>
+
+        <div id="shop-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <div class="modal-icon" id="modal-icon"></div>
+                <h2 id="modal-title"></h2>
+                <p id="modal-description"></p>
+                <div class="modal-stats">
+                    <div class="modal-stat">
+                        <span style="color: #aaa">COST:</span>
+                        <span id="modal-cost" style="color: var(--neon-pink)"></span>
+                    </div>
+                    <div class="modal-stat">
+                        <span style="color: #aaa">EFFECT:</span>
+                        <span id="modal-effect" style="color: var(--neon-blue)"></span>
+                    </div>
+                </div>
+                <button class="big-btn" id="modal-build-btn">BUILD</button>
             </div>
         </div>
 

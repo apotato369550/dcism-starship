@@ -23,17 +23,39 @@ app.get('/', (req, res) => {
 
 // Initialize Game Engine
 const gameEngine = new GameEngine();
+const botNames = ['REPLICANT-01', 'REPLICANT-02', 'REPLICANT-03', 'REPLICANT-04'];
 
 // --- SOCKET EVENT HANDLERS ---
 io.on('connection', socket => {
     // JOIN GAME
-    socket.on('join_game', username => {
+    socket.on('join_game', data => {
+        // Handle both old format (string) and new format (object with username + options)
+        const username = typeof data === 'string' ? data : data.username;
+        const mode = data.mode || 'multiplayer';
+        const botCount = data.botCount || 0;
+
         const player = gameEngine.addPlayer(socket.id, username);
         const tile = gameEngine.getTile(player.homeIndex);
 
         // Set strong home base defense
         tile.defense = 100;
         tile.maxDefense = 100;
+
+        // Create bot players for single player mode
+        if (mode === 'single') {
+            for (let i = 0; i < botCount; i++) {
+                const botPlayer = gameEngine.addPlayer(`bot-${Date.now()}-${i}`, botNames[i]);
+                const botTile = gameEngine.getTile(botPlayer.homeIndex);
+                botTile.defense = 100;
+                botTile.maxDefense = 100;
+                io.emit('map_update_single', botTile);
+                io.emit('chat_receive', {
+                    user: 'SYSTEM',
+                    msg: `${botPlayer.username} has established a colony.`,
+                    color: '#888',
+                });
+            }
+        }
 
         socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP });
         io.emit('map_update_single', tile);

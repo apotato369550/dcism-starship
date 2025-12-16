@@ -1,16 +1,17 @@
 // Camera/Viewport Management
 export class Camera {
-    constructor() {
+    constructor(canvasWidth = 800, canvasHeight = 600) {
         this.x = 0;
         this.y = 0;
         this.zoomLevel = 1;
         this.minZoom = 0.5;
-        this.maxZoom = 3;
+        this.maxZoom = 4;
         this.zoomSpeed = 0.1;
         this.panSpeed = 20;
         this.mapWidth = 20 * 40; // 20 tiles * 40px
         this.mapHeight = 20 * 40;
-        this.boundsPadding = 100;
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
         this.panStartX = 0;
         this.panStartY = 0;
     }
@@ -24,8 +25,8 @@ export class Camera {
     panFrom(startX, startY, currentX, currentY) {
         const deltaX = currentX - startX;
         const deltaY = currentY - startY;
-        this.x = this.panStartX - deltaX / this.zoomLevel;
-        this.y = this.panStartY - deltaY / this.zoomLevel;
+        this.x = this.panStartX + deltaX / this.zoomLevel;
+        this.y = this.panStartY + deltaY / this.zoomLevel;
         this.clamp();
     }
 

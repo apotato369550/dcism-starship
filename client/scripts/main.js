@@ -43,9 +43,14 @@ socketClient.onConnect(myId => {
 
 socketClient.onInit(data => {
     gameState.init(data);
-    uiManager.renderShop(key => {
-        gameState.selectUnit(key);
-        uiManager.shopUI.updateSelection();
+    uiManager.renderShop(buildModeActive => {
+        // Build mode changed callback
+        if (buildModeActive) {
+            // Visual feedback for build mode
+            document.body.style.cursor = 'crosshair';
+        } else {
+            document.body.style.cursor = 'default';
+        }
     });
     uiManager.updateStats(data.you);
     uiManager.updateInspector(gameState.selectedTileIndex, tileIndex => {
@@ -85,11 +90,37 @@ socketClient.onChatReceive(data => {
     uiManager.addChatMessage(data.user, data.msg, data.color);
 });
 
+// Game mode and settings tracking
+let gameMode = null;
+let botCount = 0;
+
+// Setup mode selection
+document.getElementById('modeBtn-single').addEventListener('click', () => {
+    gameMode = 'single';
+    document.getElementById('modeOverlay').classList.add('hidden');
+    document.getElementById('botsOverlay').classList.remove('hidden');
+});
+
+// Setup bot count selection
+for (let i = 0; i <= 3; i++) {
+    document.getElementById(`botsBtn-${i}`).addEventListener('click', () => {
+        botCount = i;
+        document.getElementById('botsOverlay').classList.add('hidden');
+        document.getElementById('loginOverlay').classList.remove('hidden');
+        document.getElementById('usernameInput').focus();
+    });
+}
+
+document.getElementById('botsBtn-back').addEventListener('click', () => {
+    document.getElementById('botsOverlay').classList.add('hidden');
+    document.getElementById('modeOverlay').classList.remove('hidden');
+});
+
 // Setup login
 document.getElementById('joinBtn').addEventListener('click', () => {
     const name = document.getElementById('usernameInput').value;
     if (name) {
-        socketClient.joinGame(name);
+        socketClient.joinGame(name, { mode: gameMode, botCount });
         document.getElementById('loginOverlay').classList.add('hidden');
     }
 });
@@ -121,12 +152,22 @@ mouseHandler.init(
         // Tile click handler
         uiManager.selectTile(tileIndex);
 
-        if (tile.owner === gameState.myId && gameState.selectedUnitKey) {
-            audioManager.playSFX('build');
-            socketClient.placeUnit(tileIndex, gameState.selectedUnitKey);
-        } else if (tile.owner !== gameState.myId) {
-            audioManager.playSFX('capture');
-            socketClient.captureAttempt(tileIndex);
+        // Handle build mode
+        if (uiManager.shopUI.buildMode) {
+            if (tile.owner === gameState.myId && gameState.selectedUnitKey) {
+                audioManager.playSFX('build');
+                socketClient.placeUnit(tileIndex, gameState.selectedUnitKey);
+                uiManager.shopUI.exitBuildMode();
+            }
+        } else {
+            // Normal mode
+            if (tile.owner === gameState.myId && gameState.selectedUnitKey) {
+                audioManager.playSFX('build');
+                socketClient.placeUnit(tileIndex, gameState.selectedUnitKey);
+            } else if (tile.owner !== gameState.myId) {
+                audioManager.playSFX('capture');
+                socketClient.captureAttempt(tileIndex);
+            }
         }
 
         renderer.render();
@@ -146,6 +187,13 @@ mouseHandler.init(
             camera.panFrom(startMouseX, startMouseY, currentMouseX, currentMouseY);
             renderer.render();
         },
+    },
+    () => {
+        // Click outside canvas handler - deselect tile
+        gameState.selectTile(null);
+        uiManager.shopUI.exitBuildMode();
+        uiManager.updateInspector(null);
+        renderer.render();
     }
 );
 

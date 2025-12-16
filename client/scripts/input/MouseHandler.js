@@ -12,10 +12,14 @@ export class MouseHandler {
         this.panStartCameraY = 0;
     }
 
-    init(onTileClick, onWheel, onPan) {
+    init(onTileClick, onWheel, onPan, onClickOutside) {
         this.canvas.addEventListener('mousemove', e => this.onMouseMove(e));
-        this.canvas.addEventListener('click', e => this.onCanvasClick(e, onTileClick));
-        this.canvas.addEventListener('wheel', e => this.onWheel(e, onWheel), { passive: false });
+        this.canvas.addEventListener('click', e =>
+            this.onCanvasClick(e, onTileClick, onClickOutside)
+        );
+        this.canvas.addEventListener('wheel', e => this.onWheel(e, onWheel), {
+            passive: false,
+        });
         this.canvas.addEventListener('mousedown', e => this.onMouseDown(e, onPan));
         document.addEventListener('mousemove', e => this.onDocumentMouseMove(e, onPan));
         document.addEventListener('mouseup', e => this.onMouseUp(e));
@@ -27,16 +31,21 @@ export class MouseHandler {
         this.renderer.updateTooltip(tooltip, tileIndex, e.clientX, e.clientY);
     }
 
-    onCanvasClick(e, callback) {
+    onCanvasClick(e, onTileClick, onClickOutside) {
         if (this.gameState.isCooldown && this.gameState.selectedUnitKey) return;
 
         const tileIndex = this.renderer.screenToWorldTile(e.clientX, e.clientY);
-        if (tileIndex < 0 || tileIndex >= 400) return;
+
+        // If click is outside valid tiles, trigger deselect
+        if (tileIndex < 0 || tileIndex >= 400) {
+            if (onClickOutside) onClickOutside();
+            return;
+        }
 
         const tile = this.gameState.getTile(tileIndex);
         this.gameState.selectTile(tileIndex);
 
-        if (callback) callback(tileIndex, tile);
+        if (onTileClick) onTileClick(tileIndex, tile);
     }
 
     onWheel(e, callback) {
