@@ -4,23 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DCISM Starship 2.0 is a real-time multiplayer territory control game built with Socket.IO, Express, and vanilla JavaScript. Players establish colonies, build production and defense structures, capture enemy territories, and compete to eliminate opponents by destroying their capitals.
+DCISM Starship 2.0 is a real-time multiplayer territory control game with vaporwave aesthetic built with Socket.IO, Express, and vanilla JavaScript. Players establish colonies, build production and defense structures, capture enemy territories, and compete to eliminate opponents by destroying their capitals.
 
 ## Architecture
 
 ### Stack
 - **Backend**: Node.js with Express and Socket.IO for real-time multiplayer
 - **Frontend**: Vanilla JavaScript with HTML5 Canvas rendering
+- **Configuration**: Environment variables via `.env` file
 - **No build process**: Runs directly with Node.js (CommonJS modules)
 
 ### Project Structure
 ```
 starbase-dcism-io/
 ├── server/
-│   └── index.js        # Socket.IO server, game logic, and economy loop
+│   └── index.js            # Socket.IO server, game logic, and economy loop
 ├── client/
-│   └── index.html      # Full UI, canvas rendering, and client Socket.IO code
-└── package.json        # Dependencies only (no custom scripts)
+│   └── index.html          # Full UI, canvas rendering, and client Socket.IO code
+├── config/
+│   └── tiles.js            # Tile/unit type definitions
+├── .env                    # Environment variables and game config
+├── package.json            # Dependencies
+└── CLAUDE.md               # This file
 ```
 
 ### Communication Flow
@@ -44,10 +49,11 @@ starbase-dcism-io/
 - **Buildings**: Production units increase `mps`, military units increase tile `maxDefense` and `defense`
 
 ### Shop System
-Defined in `SHOP` object in `server/index.js`:
+Defined in `config/tiles.js`:
 - Production: `solar_siphon` → `flux_reactor` → `void_harvester` (increasing income)
 - Military: `orbital_wall` → `laser_battery` (increasing defense)
-- Each unit has: `name`, `type` (prod/mil), `cost`, `val` (income or defense bonus), `symbol` (emoji)
+- Each unit has: `name`, `type` (prod/mil), `cost`, `val` (income or defense bonus), `symbol` (emoji), `upgrade` (next tier or null)
+- Auto-imported by server on startup
 
 ## Development Commands
 
@@ -68,15 +74,19 @@ The project has no build process, linting, or tests configured. All code runs di
 ## Making Changes
 
 ### Modifying game balance
-- Map size: `MAP_WIDTH`, `MAP_HEIGHT` in `server/index.js`
-- Cooldown duration: `COOLDOWN_MS` (currently 3000ms)
-- Starting resources: `mp: 100` in player initialization
-- Unit costs/values: Edit `SHOP` object entries
+All game configuration is in `.env` file:
+- **Map size**: `MAP_WIDTH`, `MAP_HEIGHT` (default: 20x20)
+- **Starting resources**: `STARTING_ENERGY` (default: 10), `STARTING_ENERGY_PER_SEC` (default: 0)
+- **Cooldown duration**: `COOLDOWN_MS` (default: 3000ms)
+- **Tile defaults**: `BASE_TILE_DEFENSE`, `BASE_TILE_MAX_DEFENSE` (default: 10 each)
+- **Economy tick**: `ECONOMY_TICK_MS` (default: 1000ms)
+- **Server port**: `PORT` (default: 3000)
 
 ### Adding new buildings
-1. Add entry to `SHOP` object with `name`, `type`, `cost`, `val`, `symbol`, `upgrade`
-2. Client automatically renders new items in shop UI (production/military categories)
-3. No client-side changes needed unless adding new unit types beyond prod/mil
+1. Add entry to `config/tiles.js` with `name`, `type`, `cost`, `val`, `symbol`, `upgrade`
+2. Server automatically imports and exports to clients
+3. Client automatically renders new items in shop UI (production/military categories)
+4. No client-side changes needed unless adding new unit types beyond prod/mil
 
 ### Canvas rendering
 - Tile size: `TILE_SIZE = 40` (pixels per tile)
@@ -100,10 +110,27 @@ The project has no build process, linting, or tests configured. All code runs di
 - `action_success()` - Trigger cooldown UI
 - `chat_receive({user, msg, color})` - Chat message
 
-### UI Modes
-- **Build mode**: Select shop item → click owned tiles to place
-- **Inspector mode**: Click owned tile with building → shows demolish option
-- **Capture mode**: Click adjacent enemy/neutral tiles (costs energy equal to defense)
+### UI & Controls
+**Mouse Controls:**
+- **Click tile**: Select for inspection or execute action
+- **Ctrl + Scroll**: Zoom in/out (0.5x to 3x)
+- **Ctrl + Drag**: Pan camera
+
+**Keyboard Controls:**
+- **WASD**: Move camera (W=up, A=left, S=down, D=right)
+- **Arrow Keys**: Navigate tile selection (↑↓←→)
+- **Enter**: Build on selected tile or capture enemy tile
+
+**UI Modes:**
+- **Build mode**: Select shop item → select owned tile → press Enter to place
+- **Inspector mode**: Select owned tile with building → shows demolish option
+- **Capture mode**: Select enemy/neutral tile → press Enter to attack
+
+### Audio
+- **SFX Toggle**: Enable/disable sound effects (action, build, capture)
+- **Music Toggle**: Enable/disable chill vaporwave ambient music
+- **Red when disabled**: Buttons turn red when toggled off
+- Toggles appear in left sidebar
 
 ## Common Patterns
 
