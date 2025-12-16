@@ -70,12 +70,17 @@ starbase-dcism-io/
 ├── docs/
 │   ├── ARCHITECTURE.md            # Architecture guide
 │   └── CONTRIBUTING.md            # Contribution guidelines
-├── .env                           # Environment variables
+├── .env                           # Environment variables (local)
+├── .env.production                # Environment variables (production template)
 ├── .eslintrc.json                 # ESLint configuration
 ├── .prettierrc.json               # Prettier configuration
 ├── jest.config.js                 # Jest test configuration
+├── ecosystem.config.js            # PM2 process configuration
+├── deploy.sh                       # Production deployment script
 ├── package.json                   # Dependencies and scripts
-└── CLAUDE.md                      # This file (developer guidance)
+├── CLAUDE.md                      # This file (developer guidance)
+├── DEPLOYMENT.md                  # Detailed deployment guide
+└── DEPLOY_QUICKSTART.md           # Quick deployment reference
 ```
 
 ### Communication Flow
@@ -132,6 +137,58 @@ npm test            # Run all tests once
 npm run test:watch  # Run tests in watch mode
 ```
 Tests are located in `tests/` and use Jest framework.
+
+## Deployment
+
+### Quick Deploy to Production
+```bash
+# One-time setup: Add SSH key to server
+ssh-copy-id -p 22077 s21103565@web.dcism.org
+
+# Deploy (runs from your local machine)
+./deploy.sh
+```
+
+The deployment script automatically:
+1. Clones or updates the repository on the server
+2. Installs dependencies
+3. Configures environment variables (PORT=20145)
+4. Starts the application with PM2
+5. Enables auto-restart on server reboot
+
+Access the game at: `http://starship.dcism.org:20145`
+
+### Production Server Details
+- **Host**: web.dcism.org
+- **Port**: 22077 (SSH)
+- **Server User**: s21103565
+- **Game Port**: 20145
+- **Process Manager**: PM2 (auto-start enabled)
+- **Folder**: ~/starship.dcism.org
+
+### Managing Deployed Application
+```bash
+# View logs
+ssh -p 22077 s21103565@web.dcism.org "pm2 logs starship"
+
+# Restart application
+ssh -p 22077 s21103565@web.dcism.org "pm2 restart starship"
+
+# Stop application
+ssh -p 22077 s21103565@web.dcism.org "pm2 stop starship"
+
+# Check status
+ssh -p 22077 s21103565@web.dcism.org "pm2 status"
+```
+
+### Deployment Files
+- `deploy.sh` - Main deployment script (run locally)
+- `ecosystem.config.js` - PM2 process configuration
+- `.env.production` - Example production environment variables
+- `DEPLOYMENT.md` - Detailed deployment documentation
+- `DEPLOY_QUICKSTART.md` - Quick reference guide
+
+For detailed deployment instructions, see **DEPLOYMENT.md**.
 
 ## Module System
 
