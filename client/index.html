@@ -118,7 +118,7 @@
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.4), inset 0 0 5px rgba(0, 255, 255, 0.2);
         }
         #cd-bar {
-            height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan));
+            height: 100%; width: 100%; background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan));
             box-shadow: 0 0 10px var(--neon-magenta), inset 0 0 5px rgba(255, 255, 255, 0.3);
             transition: width 3s linear; border-radius: 0;
         }
@@ -573,6 +573,11 @@
             shopData = data.shop;
             renderShop(data.shop);
             updateUI(data.you);
+
+            // Set starting tile as selected (player's home base)
+            selectedTileIndex = data.you.homeIndex;
+            updateInspector(selectedTileIndex);
+
             render();
             // Initialize audio and start ambient music
             initAudio();
@@ -673,10 +678,22 @@
         function triggerCooldownUI() {
             isCooldown = true;
             const bar = document.getElementById('cd-bar');
+
+            // Instantly drain the bar
+            bar.style.transition = 'none';
             bar.style.width = '0%';
             playSFX('action');
-            setTimeout(() => { bar.style.width = '100%'; }, 50);
-            setTimeout(() => { isCooldown = false; bar.style.width = '0%'; }, 3000);
+
+            // Start recharging after a tiny delay
+            setTimeout(() => {
+                bar.style.transition = 'width 3s linear';
+                bar.style.width = '100%';
+            }, 50);
+
+            // Re-enable actions after cooldown
+            setTimeout(() => {
+                isCooldown = false;
+            }, 3000);
         }
 
         function renderShop(shop) {
@@ -737,11 +754,47 @@
             };
         }
 
-        // --- CAMERA CONTROLS ---
+        // --- CAMERA CONTROLS & KEYBOARD INPUT ---
         // WASD Navigation
         const keys = {};
         document.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+
+            // Arrow keys for tile selection
+            if (selectedTileIndex !== null && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                e.preventDefault();
+                const col = selectedTileIndex % 20;
+                const row = Math.floor(selectedTileIndex / 20);
+                let newIndex = selectedTileIndex;
+
+                if (key === 'arrowup' && row > 0) newIndex = selectedTileIndex - 20;
+                if (key === 'arrowdown' && row < 19) newIndex = selectedTileIndex + 20;
+                if (key === 'arrowleft' && col > 0) newIndex = selectedTileIndex - 1;
+                if (key === 'arrowright' && col < 19) newIndex = selectedTileIndex + 1;
+
+                if (newIndex !== selectedTileIndex && newIndex >= 0 && newIndex < 400) {
+                    selectedTileIndex = newIndex;
+                    updateInspector(selectedTileIndex);
+                    render();
+                }
+            }
+
+            // Enter to build/conquer selected tile
+            if (key === 'enter' && selectedTileIndex !== null) {
+                e.preventDefault();
+                const tile = map[selectedTileIndex];
+                if (!tile) return;
+
+                // Build or Capture logic (same as click)
+                if (tile.owner === myId && selectedUnitKey) {
+                    playSFX('build');
+                    socket.emit('place_unit', { tileIndex: selectedTileIndex, unitType: selectedUnitKey });
+                } else if (tile.owner !== myId) {
+                    playSFX('capture');
+                    socket.emit('capture_attempt', selectedTileIndex);
+                }
+            }
         });
         document.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
