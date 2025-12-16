@@ -72,12 +72,27 @@ echo ""
 
 # Check if folder exists
 if [ -d "$SERVER_FOLDER" ]; then
-    echo -e "Folder $SERVER_FOLDER already exists, updating..."
+    echo "Folder $SERVER_FOLDER already exists"
     cd "$SERVER_FOLDER"
 
-    # Pull latest changes
-    echo "Pulling latest changes from repository..."
-    git pull origin main
+    # Check if it's a git repository
+    if [ -d ".git" ]; then
+        echo "Git repository detected, pulling latest changes..."
+        git pull origin main
+    else
+        echo "Not a git repository, initializing..."
+        # Backup existing folder contents
+        if [ -n "$(ls -A .)" ]; then
+            echo "Backing up existing contents to ${SERVER_FOLDER}.backup..."
+            cd ..
+            mv "$SERVER_FOLDER" "${SERVER_FOLDER}.backup.$(date +%s)"
+            mkdir -p "$SERVER_FOLDER"
+            cd "$SERVER_FOLDER"
+        fi
+        # Clone repository
+        echo "Cloning repository..."
+        git clone "$REPO_URL" .
+    fi
 else
     echo "Creating new deployment folder..."
     mkdir -p "$SERVER_FOLDER"
