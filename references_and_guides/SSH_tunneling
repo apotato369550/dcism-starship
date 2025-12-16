@@ -1,0 +1,66 @@
+SSH Tunneling for Local Development
+a month ago
+Updated
+When working with remote servers, it's common to need access to services (like databases) that are not exposed to the public internet for security reasons. SSH Tunneling (or Port Forwarding) allows you to securely connect to these services as if they were running on your local machine.
+
+Step 1: Establish the SSH Tunnel
+We will use the service's standard port (3306 in this example) for the local port for convenience. Since the SSH server is on a custom port, we use the -p 22077 flag.
+
+The Core Command Structure
+ssh -p 22077 -L [Local Port]:[Remote Host]:[Remote Port] [User]@[SSH Server Hostname]
+Parameter	Description
+-p 22077	Specifies the port of the SSH server.
+-L	Specifies Local Port Forwarding.
+[Local Port]	The port on your local machine (e.g., 3306).
+[Remote Host]	The host of the service (localhost).
+[Remote Port]	The actual port of the service on the server (e.g., 3306 for MySQL).
+Example: Connecting to MySQL
+This command tunnels the server's MySQL port (3306) to a port on your local machine (3306):
+
+Open your terminal.
+
+Execute the command:
+
+ssh -p 22077 -L 3306:localhost:3306 user@web.dcism.org
+Replace user with your actual username on dcism.org.
+Authenticate: Enter your SSH password or passphrase when prompted.
+
+Keep the Window Open: The tunnel remains active only as long as this terminal session is connected. Do not close it.
+
+⚠️ Handling Port Conflicts (Very Common): If you receive a "Bind Error" or "Address already in use," it means another service (like a local database instance) is already using port 3306 on your machine. Solution: Change the Local Port to an adjacent, unused port (e.g., 3307).
+
+Example Conflict Solution Command:
+
+ssh -p 22077 -L 3307:localhost:3306 user@web.dcism.org
+Step 2: Configure Your Local Application/Client
+With the tunnel active, configure your local application or database client to connect to the local address and port you used in Step 1.
+
+Connection Settings Summary
+When configuring your client or application:
+
+Configuration Field	If using 3306 locally
+Server/Host	localhost
+Port	3306
+Database Username	Database User (e.g., db_admin)
+Database Password	Database Password
+Step 3: Closing the Tunnel
+To terminate the secure tunnel:
+
+Go to the terminal window that is holding the active SSH session.
+
+Press Ctrl + C (or close the window).
+
+Windows Users (PuTTY) Instructions
+If you prefer PuTTY on Windows:
+
+Session: Enter web.dcism.org in the Host Name and 22077 in the Port field.
+
+Connection > SSH > Tunnels:
+
+Set Source Port: 3306 (or 3307 if needed).
+
+Set Destination: localhost:3306.
+
+Click Add.
+
+Open: Click the Open button to start the session and log in.
