@@ -20,7 +20,8 @@ export class GameState {
     }
 
     selectUnit(unitKey) {
-        if (this.selectedUnitKey === unitKey) {
+        // Allow null to deselect, or set to a specific unit
+        if (unitKey === null) {
             this.selectedUnitKey = null;
         } else {
             this.selectedUnitKey = unitKey;
@@ -28,7 +29,10 @@ export class GameState {
     }
 
     selectTile(index) {
-        if (index >= 0 && index < this.map.length) {
+        // Allow null to deselect, or set to a valid tile
+        if (index === null) {
+            this.selectedTileIndex = null;
+        } else if (index >= 0 && index < this.map.length) {
             this.selectedTileIndex = index;
         }
     }

@@ -14,8 +14,8 @@ import { SocketClient } from './socket/socketClient.js';
 
 // Initialize core systems
 const gameState = new GameState();
-const camera = new Camera();
 const canvas = document.getElementById('gameCanvas');
+const camera = new Camera(canvas.width, canvas.height);
 const renderer = new Renderer(canvas, gameState, camera);
 const audioManager = new AudioManager();
 
@@ -249,6 +249,7 @@ chatUI.onSendMessage(message => {
 // Handle window resize
 window.addEventListener('resize', () => {
     renderer.resizeCanvas();
+    camera.setCanvasDimensions(canvas.width, canvas.height);
     renderer.render();
 });
 

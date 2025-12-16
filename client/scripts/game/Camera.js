@@ -62,13 +62,25 @@ export class Camera {
     }
 
     clamp() {
-        const minX = -this.boundsPadding;
-        const maxX = this.mapWidth + this.boundsPadding;
-        const minY = -this.boundsPadding;
-        const maxY = this.mapHeight + this.boundsPadding;
+        // Calculate the viewport size at current zoom level
+        const viewportWidth = this.canvasWidth / this.zoomLevel;
+        const viewportHeight = this.canvasHeight / this.zoomLevel;
+
+        // Calculate bounds to keep map visible
+        // Camera position is the center of the viewport
+        const minX = -viewportWidth / 2;
+        const maxX = this.mapWidth + viewportWidth / 2;
+        const minY = -viewportHeight / 2;
+        const maxY = this.mapHeight + viewportHeight / 2;
 
         this.x = Math.max(minX, Math.min(maxX, this.x));
         this.y = Math.max(minY, Math.min(maxY, this.y));
+    }
+
+    setCanvasDimensions(width, height) {
+        this.canvasWidth = width;
+        this.canvasHeight = height;
+        this.clamp();
     }
 
     screenToWorld(screenX, screenY, canvasWidth, canvasHeight) {
@@ -88,6 +100,12 @@ export class Camera {
         const baseSize = 40;
         const col = Math.floor(worldPos.x / baseSize);
         const row = Math.floor(worldPos.y / baseSize);
+
+        // Validate that the tile is within the 20x20 grid
+        if (col < 0 || col >= 20 || row < 0 || row >= 20) {
+            return -1; // Invalid tile
+        }
+
         return row * 20 + col;
     }
 }

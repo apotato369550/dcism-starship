@@ -36,15 +36,20 @@ export class MouseHandler {
 
         const tileIndex = this.renderer.screenToWorldTile(e.clientX, e.clientY);
 
-        // If click is outside valid tiles, trigger deselect
+        // If click is outside valid tiles (screenToWorldTile returns -1 for invalid), trigger deselect
         if (tileIndex < 0 || tileIndex >= 400) {
             if (onClickOutside) onClickOutside();
             return;
         }
 
+        // Verify tile exists before proceeding
         const tile = this.gameState.getTile(tileIndex);
-        this.gameState.selectTile(tileIndex);
+        if (!tile) {
+            if (onClickOutside) onClickOutside();
+            return;
+        }
 
+        this.gameState.selectTile(tileIndex);
         if (onTileClick) onTileClick(tileIndex, tile);
     }
 
