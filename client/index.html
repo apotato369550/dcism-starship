@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DCISM STARSHIP 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #05000a;
+            --panel-bg: rgba(13, 10, 25, 0.95);
+            --neon-pink: #ff00de;
+            --neon-blue: #00f3ff;
+            --neon-green: #00ff66;
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- LOGIN & GAME OVER OVERLAYS --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .hidden { display: none !important; }
+        
+        input {
+            background: #111; border: 1px solid var(--neon-blue);
+            color: white; padding: 15px; font-family: 'Orbitron'; font-size: 24px;
+            margin-bottom: 20px; text-align: center; width: 300px; outline: none;
+        }
+        
+        .big-btn {
+            background: var(--neon-pink); color: white; padding: 15px 40px;
+            border: none; font-family: 'Orbitron'; cursor: pointer; font-size: 18px;
+            box-shadow: 0 0 15px var(--neon-pink); text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .big-btn:hover { transform: scale(1.05); }
+
+        /* --- LEFT SIDEBAR --- */
+        #ui-panel {
+            width: 350px;
+            background: var(--panel-bg);
+            border-right: 2px solid var(--neon-blue);
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif; font-size: 24px;
+            color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue);
+            margin: 0 0 20px 0; letter-spacing: 2px;
+        }
+
+        .stat-display {
+            display: flex; justify-content: space-between; align-items: baseline;
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .stat-val { font-family: 'Orbitron'; font-size: 32px; color: var(--neon-green); }
+
+        /* Cooldown Bar */
+        #cd-container { height: 6px; background: #222; width: 100%; margin: 5px 0 20px 0; border-radius: 3px; overflow:hidden;}
+        #cd-bar { height: 100%; width: 100%; background: var(--neon-pink); transition: width 0.05s linear; }
+
+        /* Shop Grid */
+        .shop-category { font-size: 14px; color: #888; text-transform: uppercase; margin-top: 10px; letter-spacing: 1px;}
+        .shop-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a1525; padding: 12px; margin-bottom: 5px;
+            border: 1px solid #333; cursor: pointer; transition: 0.2s;
+        }
+        .shop-item:hover { background: #252035; border-color: var(--neon-blue); }
+        .shop-item.selected { background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue); }
+
+        /* --- TILE INSPECTOR (Context Menu) --- */
+        #inspector {
+            margin-top: auto; padding: 15px; background: #151020; border-top: 1px solid #444;
+        }
+        #inspector h3 { margin: 0 0 10px 0; font-size: 16px; color: #fff; }
+        .action-btn {
+            width: 100%; padding: 10px; margin-top: 5px;
+            background: #333; color: white; border: none; cursor: pointer;
+            font-family: 'Rajdhani'; font-weight: bold; text-transform: uppercase;
+        }
+        .btn-destruct { background: #500; color: #ffaaaa; }
+        .btn-destruct:hover { background: #f00; color: #fff; }
+
+        /* --- GAME AREA --- */
+        #game-container {
+            flex-grow: 1; position: relative;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000 100%);
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        canvas {
+            box-shadow: 0 0 80px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+            image-rendering: pixelated; 
+        }
+
+        /* --- TOOLTIP --- */
+        #tooltip {
+            position: fixed; pointer-events: none;
+            background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
+            padding: 10px; border-radius: 4px; z-index: 500;
+            color: white; font-size: 14px; min-width: 150px;
+            transform: translate(15px, 15px);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        
+        /* --- CHAT --- */
+        #chat-box {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 320px; height: 200px; background: rgba(0,0,0,0.8);
+            border: 1px solid #444; display: flex; flex-direction: column;
+        }
+        #chat-msgs { flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 13px; }
+        #chat-input { background: transparent; border: none; border-top: 1px solid #444; color: white; padding: 10px; outline: none; }
+
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay" class="overlay">
+        <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink);">DCISM STARSHIP</h1>
+        <input type="text" id="usernameInput" placeholder="ENTER CALLSIGN" maxlength="12">
+        <button class="big-btn" id="joinBtn">INITIALIZE</button>
+    </div>
+
+    <div id="gameOverOverlay" class="overlay hidden">
+        <h1 style="color:red; font-size:50px;">SIGNAL LOST</h1>
+        <p style="font-size: 20px; margin-bottom: 30px;">YOUR CAPITAL HAS FALLEN.</p>
+        <button class="big-btn" onclick="location.reload()">REBOOT SYSTEM</button>
+    </div>
+
+    <div id="ui-panel">
+        <h1>COMMAND DECK</h1>
+        
+        <div class="stat-display">
+            <span style="color:#aaa">ENERGY</span>
+            <span id="mpDisplay" class="stat-val">0</span>
+        </div>
+        <div style="text-align: right; color: #888; font-size: 14px; margin-top: -10px;">
+            <span id="mpsDisplay" style="color:var(--neon-green)">+0</span> / sec
+        </div>
+
+        <div id="cd-container"><div id="cd-bar"></div></div>
+        <button class="big-btn" style="padding: 10px; font-size:14px;" onclick="socket.emit('click_generate')">MANUAL CHARGE</button>
+
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 5px;">
+            <div class="shop-category">Production Modules</div>
+            <div id="shop-prod"></div>
+            
+            <div class="shop-category">Defense Systems</div>
+            <div id="shop-mil"></div>
+        </div>
+
+        <div id="inspector" class="hidden">
+            <h3 id="insp-title">Selected Tile</h3>
+            <div id="insp-info" style="font-size: 12px; color: #aaa; margin-bottom:10px;"></div>
+            <button id="btn-demolish" class="action-btn btn-destruct">Demolish Structure</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="800"></canvas> <div id="tooltip" class="hidden"></div>
+    </div>
+
+    <div id="chat-box">
+        <div id="chat-msgs"></div>
+        <input type="text" id="chat-input" placeholder="Broadcast message...">
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let map = [];
+        let myId = null;
+        let shopData = {};
+        let selectedUnitKey = null; // Building mode
+        let selectedTileIndex = null; // Inspector mode
+        let isCooldown = false;
+        
+        // --- LOGIN ---
+        document.getElementById('joinBtn').addEventListener('click', () => {
+            const name = document.getElementById('usernameInput').value;
+            if(name) {
+                socket.emit('join_game', name);
+                document.getElementById('loginOverlay').classList.add('hidden');
+            }
+        });
+
+        // --- RENDER ---
+        function render() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            const TILE_SIZE = 40; 
+
+            map.forEach((tile, i) => {
+                const col = i % 20;
+                const row = Math.floor(i / 20);
+                const x = col * TILE_SIZE;
+                const y = row * TILE_SIZE;
+                
+                // 1. Background
+                ctx.fillStyle = tile.owner ? tile.color : '#101015';
+                ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                
+                // 2. Grid Lines
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+
+                // 3. Selection Highlight
+                if (selectedTileIndex === i) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = '#fff';
+                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                }
+
+                // 4. Units & Icons
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (tile.isHome) {
+                    ctx.font = '24px Arial';
+                    ctx.fillText('👑', x + TILE_SIZE/2, y + TILE_SIZE/2);
+                } else if (tile.unit) {
+                    const u = shopData[tile.unit];
+                    ctx.font = '20px Arial';
+                    ctx.fillText(u ? u.symbol : '?', x + TILE_SIZE/2, y + TILE_SIZE/2);
+                }
+
+                // 5. HP Text (Only if space allows or simplified)
+                // Small readable HP at bottom right
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(x + TILE_SIZE - 22, y + TILE_SIZE - 12, 20, 10); // Background pill
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(tile.defense, x + TILE_SIZE - 4, y + TILE_SIZE - 3);
+            });
+        }
+
+        // --- SOCKETS ---
+        socket.on('connect', () => myId = socket.id);
+        
+        socket.on('init', (data) => {
+            map = data.map;
+            shopData = data.shop;
+            renderShop(data.shop);
+            updateUI(data.you);
+            render();
+        });
+
+        socket.on('map_update_single', (tile) => {
+            map[tile.id] = tile;
+            // Update inspector if we are looking at this tile
+            if(selectedTileIndex === tile.id) updateInspector(tile.id);
+            render();
+        });
+
+        socket.on('update_self', (p) => updateUI(p));
+        
+        socket.on('game_over', () => {
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        });
+
+        socket.on('action_success', () => triggerCooldownUI());
+
+        socket.on('chat_receive', (data) => {
+            const div = document.createElement('div');
+            div.style.marginBottom = "5px";
+            div.innerHTML = `<b style="color:${data.color}">${data.user}:</b> ${data.msg}`;
+            document.getElementById('chat-msgs').appendChild(div);
+            // Auto scroll
+            document.getElementById('chat-msgs').scrollTop = document.getElementById('chat-msgs').scrollHeight;
+        });
+
+        // --- INPUTS ---
+        canvas.addEventListener('mousemove', (e) => {
+            const { index, x, y } = getMouseTile(e);
+            if(index < 0 || index >= map.length) {
+                tooltip.classList.add('hidden');
+                return;
+            }
+            
+            const tile = map[index];
+            const uName = tile.unit ? shopData[tile.unit].name : (tile.isHome ? "CAPITAL" : "Empty Space");
+            
+            tooltip.classList.remove('hidden');
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+            tooltip.innerHTML = `
+                <div style="color:${tile.color}; font-weight:bold;">${uName}</div>
+                <div>DEF: ${tile.defense} / ${tile.maxDefense}</div>
+                ${tile.owner ? '<div style="font-size:10px; opacity:0.7">OCCUPIED</div>' : ''}
+            `;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if(isCooldown && selectedUnitKey) return; // Cant build on CD
+            
+            const { index } = getMouseTile(e);
+            if(index < 0 || index >= 400) return;
+            const tile = map[index];
+
+            selectedTileIndex = index;
+            render(); // redraw selection highlight
+            updateInspector(index);
+
+            // LOGIC: Build or Capture
+            if (tile.owner === myId && selectedUnitKey) {
+                socket.emit('place_unit', { tileIndex: index, unitType: selectedUnitKey });
+            } else if (tile.owner !== myId || !tile.unit) {
+                // If enemy, or empty owned tile (without build tool), try capture
+                if(tile.owner !== myId) socket.emit('capture_attempt', index);
+            }
+        });
+
+        // --- UI HELPERS ---
+        function getMouseTile(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const col = Math.floor(x / 40);
+            const row = Math.floor(y / 40);
+            return { index: row * 20 + col, x, y };
+        }
+
+        function updateUI(player) {
+            document.getElementById('mpDisplay').innerText = Math.floor(player.mp);
+            document.getElementById('mpsDisplay').innerText = "+" + player.mps;
+        }
+
+        function triggerCooldownUI() {
+            isCooldown = true;
+            const bar = document.getElementById('cd-bar');
+            bar.style.width = '0%';
+            setTimeout(() => { bar.style.width = '100%'; }, 50);
+            setTimeout(() => { isCooldown = false; }, 3000);
+        }
+
+        function renderShop(shop) {
+            const prodDiv = document.getElementById('shop-prod');
+            const milDiv = document.getElementById('shop-mil');
+            
+            prodDiv.innerHTML = ''; milDiv.innerHTML = '';
+
+            for(let key in shop) {
+                const item = shop[key];
+                const el = document.createElement('div');
+                el.className = 'shop-item';
+                el.innerHTML = `
+                    <div>
+                        <span style="font-size:20px; margin-right:5px;">${item.symbol}</span>
+                        <span>${item.name}</span>
+                    </div>
+                    <div style="text-align:right; font-size:12px; color:#aaa;">
+                        <div>${item.cost} MP</div>
+                        <div style="color:var(--neon-green)">${item.type === 'prod' ? '+' + item.val + '/s' : '+' + item.val + ' DEF'}</div>
+                    </div>
+                `;
+                el.onclick = () => {
+                    // Toggle Selection
+                    if (selectedUnitKey === key) {
+                        selectedUnitKey = null;
+                        el.classList.remove('selected');
+                    } else {
+                        document.querySelectorAll('.shop-item').forEach(d => d.classList.remove('selected'));
+                        selectedUnitKey = key;
+                        el.classList.add('selected');
+                    }
+                };
+
+                if(item.type === 'prod') prodDiv.appendChild(el);
+                else milDiv.appendChild(el);
+            }
+        }
+
+        function updateInspector(index) {
+            const tile = map[index];
+            const div = document.getElementById('inspector');
+            const info = document.getElementById('insp-info');
+            const btnDemolish = document.getElementById('btn-demolish');
+
+            if (!tile || tile.owner !== myId || !tile.unit) {
+                div.classList.add('hidden');
+                return;
+            }
+
+            div.classList.remove('hidden');
+            const unit = shopData[tile.unit];
+            info.innerHTML = `Structure: <b style="color:white">${unit.name}</b><br>Defense Bonus: ${unit.type==='mil'?unit.val:0}`;
+            
+            btnDemolish.onclick = () => {
+                socket.emit('demolish_unit', index);
+                div.classList.add('hidden');
+            };
+        }
+
+        // Chat
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                socket.emit('send_chat', e.target.value);
+                e.target.value = '';
+            }
+        });
+
+    </script>
+</body>
+</html>
