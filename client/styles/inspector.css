@@ -1,0 +1,53 @@
+/* Tile Inspector Panel */
+
+#inspector {
+    margin-top: auto;
+    padding: 15px;
+    background: rgba(0, 255, 255, 0.05);
+    border-top: 2px dashed var(--neon-cyan);
+    box-shadow: inset 0 5px 15px rgba(255, 0, 255, 0.1);
+}
+
+#inspector h3 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* Action Buttons */
+.action-btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    background: rgba(100, 50, 150, 0.3);
+    color: var(--neon-cyan);
+    border: 2px solid var(--neon-purple);
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: 0.2s;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.action-btn:hover {
+    background: rgba(150, 50, 200, 0.5);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+/* Destructive Button Variant */
+.btn-destruct {
+    background: rgba(200, 0, 0, 0.3);
+    border-color: #ff3333;
+    color: #ff6666;
+}
+
+.btn-destruct:hover {
+    background: rgba(255, 0, 0, 0.5);
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+}

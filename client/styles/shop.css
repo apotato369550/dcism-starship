@@ -1,0 +1,80 @@
+/* Shop Grid & Items */
+
+.shop-category {
+    font-size: 12px;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    margin-top: 12px;
+    letter-spacing: 2px;
+    font-family: 'Orbitron', sans-serif;
+    padding-bottom: 8px;
+    border-bottom: 2px dashed var(--neon-purple);
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.shop-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 255, 0.05);
+    padding: 16px;
+    aspect-ratio: 1;
+    border: 2px solid var(--neon-purple);
+    cursor: pointer;
+    transition: 0.2s;
+    border-radius: 0;
+    box-shadow:
+        0 0 10px rgba(255, 0, 255, 0.2),
+        inset 0 0 5px rgba(0, 255, 255, 0.1);
+    text-align: center;
+    min-height: 100px;
+}
+
+.shop-item:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: var(--neon-cyan);
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.5),
+        inset 0 0 10px rgba(0, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.shop-item.selected {
+    background: rgba(255, 0, 255, 0.15);
+    border-color: var(--neon-magenta);
+    box-shadow:
+        0 0 25px var(--neon-magenta),
+        inset 0 0 15px rgba(255, 0, 255, 0.3);
+}
+
+.shop-item-icon {
+    font-size: 44px;
+    margin-bottom: 6px;
+}
+
+.shop-item-name {
+    font-size: 12px;
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.shop-item-cost {
+    font-size: 11px;
+    color: var(--text-dark);
+    margin-bottom: 2px;
+}
+
+.shop-item-val {
+    font-size: 11px;
+    color: var(--neon-green);
+    font-weight: bold;
+}

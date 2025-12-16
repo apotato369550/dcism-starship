@@ -1,0 +1,54 @@
+/* Login & Game Over Overlays */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+input {
+    background: #111;
+    border: 1px solid var(--neon-blue);
+    color: white;
+    padding: 15px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    width: 300px;
+    outline: none;
+}
+
+/* Primary Button */
+.big-btn {
+    background: var(--neon-magenta);
+    color: white;
+    padding: 15px 40px;
+    border: 2px solid var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    font-size: 18px;
+    box-shadow:
+        0 0 20px var(--neon-magenta),
+        0 0 40px var(--neon-purple),
+        inset 0 0 20px rgba(255, 0, 255, 0.3);
+    text-transform: uppercase;
+    transition: 0.3s;
+    letter-spacing: 2px;
+}
+
+.big-btn:hover {
+    transform: scale(1.08);
+    box-shadow:
+        0 0 30px var(--neon-magenta),
+        0 0 60px var(--neon-purple),
+        inset 0 0 30px rgba(255, 0, 255, 0.5);
+}

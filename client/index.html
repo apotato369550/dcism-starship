@@ -1,889 +1,101 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>DCISM STARSHIP 2.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #0a0015;
-            --panel-bg: rgba(10, 5, 25, 0.98);
-            --neon-pink: #ff10fe;
-            --neon-magenta: #ff00ff;
-            --neon-blue: #00ffff;
-            --neon-cyan: #00f0ff;
-            --neon-purple: #b300ff;
-            --neon-green: #00ff66;
-            --text-main: #e0e0ff;
-            --text-dark: #808099;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Rajdhani', sans-serif;
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
-            user-select: none;
-            position: relative;
-        }
-
-        /* Scanline effect */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15),
-                rgba(0, 0, 0, 0.15) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        /* --- LOGIN & GAME OVER OVERLAYS --- */
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        .hidden { display: none !important; }
-        
-        input {
-            background: #111; border: 1px solid var(--neon-blue);
-            color: white; padding: 15px; font-family: 'Orbitron'; font-size: 24px;
-            margin-bottom: 20px; text-align: center; width: 300px; outline: none;
-        }
-        
-        .big-btn {
-            background: var(--neon-magenta); color: white; padding: 15px 40px;
-            border: 2px solid var(--neon-cyan); font-family: 'Orbitron'; cursor: pointer; font-size: 18px;
-            box-shadow: 0 0 20px var(--neon-magenta), 0 0 40px var(--neon-purple), inset 0 0 20px rgba(255, 0, 255, 0.3);
-            text-transform: uppercase; transition: 0.3s; letter-spacing: 2px;
-        }
-        .big-btn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 0 30px var(--neon-magenta), 0 0 60px var(--neon-purple), inset 0 0 30px rgba(255, 0, 255, 0.5);
-        }
-
-        /* --- LEFT SIDEBAR --- */
-        #ui-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 350px;
-            height: 100vh;
-            background: var(--panel-bg);
-            border-right: 3px solid var(--neon-cyan);
-            padding: 20px;
-            display: flex; flex-direction: column; gap: 10px;
-            box-shadow: 10px 0 50px rgba(0, 255, 255, 0.2), inset -2px 0 20px rgba(255, 0, 255, 0.1);
-            z-index: 100;
-            overflow-y: auto;
-        }
-
-        h1 {
-            font-family: 'Orbitron', sans-serif; font-size: 24px;
-            color: var(--neon-cyan); text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-magenta);
-            margin: 0 0 20px 0; letter-spacing: 2px;
-        }
-
-        #panel-title {
-            font-family: 'Press Start 2P', cursive; font-size: 14px;
-            color: var(--neon-magenta); text-shadow: 0 0 10px var(--neon-magenta), 0 0 20px var(--neon-purple);
-            text-align: center; margin-bottom: 15px; letter-spacing: 2px;
-            border-top: 2px dashed var(--neon-cyan);
-            border-bottom: 2px dashed var(--neon-magenta);
-            padding: 12px 0;
-            line-height: 1.4;
-        }
-
-        .stat-display {
-            display: flex; justify-content: space-between; align-items: baseline;
-            background: rgba(0, 255, 255, 0.05); padding: 15px; border-radius: 0;
-            border: 2px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1);
-        }
-        .stat-val { font-family: 'Orbitron'; font-size: 32px; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
-
-        /* Cooldown Bar */
-        #cd-container {
-            height: 8px; background: rgba(0, 255, 255, 0.2); width: 100%; margin: 5px 0 20px 0;
-            border-radius: 0; overflow: hidden; border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4), inset 0 0 5px rgba(0, 255, 255, 0.2);
-        }
-        #cd-bar {
-            height: 100%; width: 100%; background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan));
-            box-shadow: 0 0 10px var(--neon-magenta), inset 0 0 5px rgba(255, 255, 255, 0.3);
-            transition: width 3s linear; border-radius: 0;
-        }
-
-        /* Shop Grid */
-        .shop-category {
-            font-size: 12px; color: var(--neon-cyan); text-transform: uppercase; margin-top: 12px;
-            letter-spacing: 2px; font-family: 'Orbitron', sans-serif;
-            padding-bottom: 8px; border-bottom: 2px dashed var(--neon-purple);
-        }
-        .shop-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
-        }
-        .shop-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0, 255, 255, 0.05); padding: 16px; aspect-ratio: 1;
-            border: 2px solid var(--neon-purple); cursor: pointer; transition: 0.2s;
-            border-radius: 0; box-shadow: 0 0 10px rgba(255, 0, 255, 0.2), inset 0 0 5px rgba(0, 255, 255, 0.1);
-            text-align: center; min-height: 100px;
-        }
-        .shop-item:hover {
-            background: rgba(0, 255, 255, 0.1); border-color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 10px rgba(0, 255, 255, 0.2);
-            transform: scale(1.05);
-        }
-        .shop-item.selected {
-            background: rgba(255, 0, 255, 0.15); border-color: var(--neon-magenta);
-            box-shadow: 0 0 25px var(--neon-magenta), inset 0 0 15px rgba(255, 0, 255, 0.3);
-        }
-        .shop-item-icon { font-size: 44px; margin-bottom: 6px; }
-        .shop-item-name { font-size: 12px; color: var(--neon-cyan); font-family: 'Orbitron'; margin-bottom: 4px; font-weight: bold; }
-        .shop-item-cost { font-size: 11px; color: var(--text-dark); margin-bottom: 2px; }
-        .shop-item-val { font-size: 11px; color: var(--neon-green); font-weight: bold; }
-
-        /* --- TILE INSPECTOR (Context Menu) --- */
-        #inspector {
-            margin-top: auto; padding: 15px; background: rgba(0, 255, 255, 0.05);
-            border-top: 2px dashed var(--neon-cyan); box-shadow: inset 0 5px 15px rgba(255, 0, 255, 0.1);
-        }
-        #inspector h3 {
-            margin: 0 0 10px 0; font-size: 12px; color: var(--neon-cyan);
-            font-family: 'Orbitron'; letter-spacing: 1px;
-        }
-        .action-btn {
-            width: 100%; padding: 10px; margin-top: 5px;
-            background: rgba(100, 50, 150, 0.3); color: var(--neon-cyan); border: 2px solid var(--neon-purple);
-            cursor: pointer; font-family: 'Rajdhani'; font-weight: bold; text-transform: uppercase;
-            transition: 0.2s; font-size: 11px; letter-spacing: 1px;
-        }
-        .action-btn:hover {
-            background: rgba(150, 50, 200, 0.5); border-color: var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-        }
-        .btn-destruct { background: rgba(200, 0, 0, 0.3); border-color: #ff3333; color: #ff6666; }
-        .btn-destruct:hover { background: rgba(255, 0, 0, 0.5); color: #ffffff; box-shadow: 0 0 20px rgba(255, 0, 0, 0.6); }
-
-        /* Audio Toggle Buttons */
-        .audio-toggle {
-            background: rgba(255, 0, 0, 0.3); color: #ff6666; border: 2px solid #ff3333;
-            padding: 8px 12px; cursor: pointer; font-family: 'Rajdhani'; font-size: 11px;
-            text-transform: uppercase; transition: 0.2s; border-radius: 0;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-        }
-        .audio-toggle:hover {
-            background: rgba(255, 0, 0, 0.4); border-color: #ff5555;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
-        }
-        .audio-toggle.active {
-            background: rgba(0, 255, 255, 0.2); border-color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); color: var(--neon-cyan);
-        }
-
-        /* --- GAME AREA --- */
-        #game-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle at center, #1a0b2e 0%, #000 100%);
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: inset 0 0 50px rgba(255, 0, 255, 0.1);
-            z-index: 1;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            image-rendering: pixelated;
-        }
-
-        /* --- TOOLTIP --- */
-        #tooltip {
-            position: fixed; pointer-events: none;
-            background: rgba(0, 0, 0, 0.95); border: 2px solid var(--neon-cyan);
-            padding: 12px; border-radius: 0; z-index: 150;
-            color: var(--neon-cyan); font-size: 12px; min-width: 150px;
-            transform: translate(15px, 15px);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), inset 0 0 10px rgba(0, 255, 255, 0.2);
-            font-family: 'Orbitron', monospace;
-        }
-        
-        /* --- CHAT --- */
-        #chat-box {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 320px; height: 200px; background: rgba(0, 0, 0, 0.95);
-            border: 2px solid var(--neon-purple); display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.1);
-            z-index: 100;
-        }
-        #chat-msgs {
-            flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 11px;
-            color: var(--neon-cyan); font-family: 'Rajdhani', monospace;
-        }
-        #chat-input {
-            background: rgba(0, 255, 255, 0.05); border: none; border-top: 2px solid var(--neon-purple);
-            color: var(--neon-cyan); padding: 10px; outline: none; font-family: 'Rajdhani', monospace;
-        }
-        #chat-input::placeholder { color: var(--text-dark); }
-
-    </style>
-</head>
-<body>
-
-    <div id="loginOverlay" class="overlay">
-        <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink);">DCISM STARSHIP</h1>
-        <input type="text" id="usernameInput" placeholder="ENTER CALLSIGN" maxlength="12">
-        <button class="big-btn" id="joinBtn">INITIALIZE</button>
-    </div>
-
-    <div id="gameOverOverlay" class="overlay hidden">
-        <h1 style="color:red; font-size:50px;">SIGNAL LOST</h1>
-        <p style="font-size: 20px; margin-bottom: 30px;">YOUR CAPITAL HAS FALLEN.</p>
-        <button class="big-btn" onclick="location.reload()">REBOOT SYSTEM</button>
-    </div>
-
-    <div id="ui-panel">
-        <div id="panel-title">DCISM STARSHIP</div>
-        <h1>COMMAND DECK</h1>
-
-        <div class="stat-display">
-            <span style="color:#aaa">ENERGY</span>
-            <span id="mpDisplay" class="stat-val">0</span>
-        </div>
-        <div style="text-align: right; color: #888; font-size: 14px; margin-top: -10px;">
-            <span id="mpsDisplay" style="color:var(--neon-green)">+0</span> / sec
+    <head>
+        <meta charset="UTF-8" />
+        <title>DCISM STARSHIP 2.0</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&family=Press+Start+2P&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/styles/variables.css" />
+        <link rel="stylesheet" href="/styles/base.css" />
+        <link rel="stylesheet" href="/styles/overlays.css" />
+        <link rel="stylesheet" href="/styles/ui-panel.css" />
+        <link rel="stylesheet" href="/styles/shop.css" />
+        <link rel="stylesheet" href="/styles/inspector.css" />
+        <link rel="stylesheet" href="/styles/canvas.css" />
+        <link rel="stylesheet" href="/styles/chat.css" />
+        <link rel="stylesheet" href="/styles/tooltips.css" />
+    </head>
+    <body>
+        <div id="loginOverlay" class="overlay">
+            <h1 style="font-size: 40px; color: white; text-shadow: 0 0 20px var(--neon-pink)">
+                DCISM STARSHIP
+            </h1>
+            <input type="text" id="usernameInput" placeholder="ENTER CALLSIGN" maxlength="12" />
+            <button class="big-btn" id="joinBtn">INITIALIZE</button>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-            <span style="color: #aaa; font-size: 12px;">RECHARGE</span>
-        </div>
-        <div id="cd-container"><div id="cd-bar"></div></div>
-        <button class="big-btn" style="padding: 10px; font-size:14px; margin-bottom: 10px;" onclick="playSFX('action'); socket.emit('click_generate')">MANUAL CHARGE</button>
-
-        <div style="display: flex; gap: 8px; margin-bottom: 15px; justify-content: center;">
-            <button id="sfx-toggle" class="audio-toggle" style="flex: 1;">🔊 SFX</button>
-            <button id="music-toggle" class="audio-toggle" style="flex: 1;">🎵 MUSIC</button>
+        <div id="gameOverOverlay" class="overlay hidden">
+            <h1 style="color: red; font-size: 50px">SIGNAL LOST</h1>
+            <p style="font-size: 20px; margin-bottom: 30px">YOUR CAPITAL HAS FALLEN.</p>
+            <button class="big-btn" onclick="location.reload()">REBOOT SYSTEM</button>
         </div>
 
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 5px;">
-            <div class="shop-category">Production Modules</div>
-            <div id="shop-prod"></div>
-            
-            <div class="shop-category">Defense Systems</div>
-            <div id="shop-mil"></div>
+        <div id="ui-panel">
+            <div id="panel-title">DCISM STARSHIP</div>
+            <h1>COMMAND DECK</h1>
+
+            <div class="stat-display">
+                <span style="color: #aaa">ENERGY</span>
+                <span id="mpDisplay" class="stat-val">0</span>
+            </div>
+            <div style="text-align: right; color: #888; font-size: 14px; margin-top: -10px">
+                <span id="mpsDisplay" style="color: var(--neon-green)">+0</span> / sec
+            </div>
+
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 15px;
+                "
+            >
+                <span style="color: #aaa; font-size: 12px">RECHARGE</span>
+            </div>
+            <div id="cd-container"><div id="cd-bar"></div></div>
+            <button
+                id="manual-charge-btn"
+                class="big-btn"
+                style="padding: 10px; font-size: 14px; margin-bottom: 10px"
+            >
+                MANUAL CHARGE
+            </button>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 15px; justify-content: center">
+                <button id="sfx-toggle" class="audio-toggle" style="flex: 1">🔊 SFX</button>
+                <button id="music-toggle" class="audio-toggle" style="flex: 1">🎵 MUSIC</button>
+            </div>
+
+            <div style="overflow-y: auto; flex-grow: 1; padding-right: 5px">
+                <div class="shop-category">Production Modules</div>
+                <div id="shop-prod"></div>
+
+                <div class="shop-category">Defense Systems</div>
+                <div id="shop-mil"></div>
+            </div>
+
+            <div id="inspector" class="hidden">
+                <h3 id="insp-title">Selected Tile</h3>
+                <div id="insp-info" style="font-size: 12px; color: #aaa; margin-bottom: 10px"></div>
+                <button id="btn-demolish" class="action-btn btn-destruct">
+                    Demolish Structure
+                </button>
+            </div>
         </div>
 
-        <div id="inspector" class="hidden">
-            <h3 id="insp-title">Selected Tile</h3>
-            <div id="insp-info" style="font-size: 12px; color: #aaa; margin-bottom:10px;"></div>
-            <button id="btn-demolish" class="action-btn btn-destruct">Demolish Structure</button>
+        <div id="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="tooltip" class="hidden"></div>
         </div>
-    </div>
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div id="tooltip" class="hidden"></div>
-    </div>
-
-    <div id="chat-box">
-        <div id="chat-msgs"></div>
-        <input type="text" id="chat-input" placeholder="Broadcast message...">
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const tooltip = document.getElementById('tooltip');
-
-        let map = [];
-        let myId = null;
-        let shopData = {};
-        let selectedUnitKey = null; // Building mode
-        let selectedTileIndex = null; // Inspector mode
-        let isCooldown = false;
-
-        // Camera/viewport variables
-        let cameraX = 0;
-        let cameraY = 0;
-        let zoomLevel = 1;
-        const MIN_ZOOM = 0.5;
-        const MAX_ZOOM = 3;
-        const ZOOM_SPEED = 0.1;
-        const PAN_SPEED = 20;
-
-        // Panning state
-        let isPanning = false;
-        let panStartX = 0;
-        let panStartY = 0;
-        let panStartCameraX = 0;
-        let panStartCameraY = 0;
-
-        // Audio System
-        let audioContext = null;
-        let sfxEnabled = true;
-        let musicEnabled = true;
-        let ambientOscillator = null;
-        let ambientGain = null;
-
-        function initAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
-
-        function playSFX(type) {
-            if (!sfxEnabled || !audioContext) return;
-            const ctx = audioContext;
-            const now = ctx.currentTime;
-
-            if (type === 'action') {
-                // Quick beep for action
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = 600;
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
-            } else if (type === 'build') {
-                // Two-tone build sound
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'capture') {
-                // Rising tone for capture
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.setValueAtTime(500, now);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            }
-        }
-
-        // Chill vaporwave melody notes (C major pentatonic scale)
-        const melodyNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // C4, D4, E4, G4, A4, C5
-        let musicOscillators = [];
-
-        function startAmbientMusic() {
-            if (!musicEnabled || !audioContext) return;
-            stopAmbientMusic();
-            const ctx = audioContext;
-
-            // Master gain for all music
-            ambientGain = ctx.createGain();
-            ambientGain.gain.setValueAtTime(0.03, ctx.currentTime);
-            ambientGain.connect(ctx.destination);
-
-            // Create a gentle pad sound with multiple oscillators
-            const createPad = (freq, detune = 0) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ambientGain);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                osc.detune.value = detune;
-                gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                osc.start();
-                return osc;
-            };
-
-            // Base chord (C major - C E G)
-            musicOscillators.push(createPad(130.81, -5));  // C3
-            musicOscillators.push(createPad(164.81, 5));   // E3
-            musicOscillators.push(createPad(196.00, -3));  // G3
-
-            // Gentle melody loop
-            let noteIndex = 0;
-            const playMelodyNote = () => {
-                if (!musicEnabled) return;
-
-                const noteOsc = ctx.createOscillator();
-                const noteGain = ctx.createGain();
-                noteOsc.connect(noteGain);
-                noteGain.connect(ambientGain);
-
-                noteOsc.type = 'sine';
-                noteOsc.frequency.value = melodyNotes[noteIndex];
-
-                const now = ctx.currentTime;
-                noteGain.gain.setValueAtTime(0, now);
-                noteGain.gain.linearRampToValueAtTime(0.15, now + 0.1);
-                noteGain.gain.exponentialRampToValueAtTime(0.01, now + 2);
-
-                noteOsc.start(now);
-                noteOsc.stop(now + 2);
-
-                noteIndex = (noteIndex + 1) % melodyNotes.length;
-                setTimeout(playMelodyNote, 3000 + Math.random() * 2000); // Random delay 3-5s
-            };
-
-            setTimeout(playMelodyNote, 1000);
-        }
-
-        function stopAmbientMusic() {
-            if (ambientOscillator) {
-                ambientOscillator.stop();
-                ambientOscillator = null;
-            }
-            musicOscillators.forEach(osc => osc.stop());
-            musicOscillators = [];
-            if (ambientGain) {
-                ambientGain = null;
-            }
-        }
-
-        // Audio toggle setup
-        document.getElementById('sfx-toggle').addEventListener('click', (e) => {
-            sfxEnabled = !sfxEnabled;
-            e.target.classList.toggle('active', sfxEnabled);
-            if (sfxEnabled) playSFX('action');
-        });
-
-        document.getElementById('music-toggle').addEventListener('click', (e) => {
-            musicEnabled = !musicEnabled;
-            e.target.classList.toggle('active', musicEnabled);
-            if (musicEnabled) {
-                initAudio();
-                startAmbientMusic();
-            } else {
-                stopAmbientMusic();
-            }
-        });
-
-        // Set initial toggle states
-        document.getElementById('sfx-toggle').classList.add('active');
-        document.getElementById('music-toggle').classList.add('active');
-
-        // Canvas resize
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            render();
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // --- LOGIN ---
-        document.getElementById('joinBtn').addEventListener('click', () => {
-            const name = document.getElementById('usernameInput').value;
-            if(name) {
-                socket.emit('join_game', name);
-                document.getElementById('loginOverlay').classList.add('hidden');
-            }
-        });
-
-        // --- RENDER ---
-        function render() {
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            const BASE_TILE_SIZE = 40;
-            const TILE_SIZE = BASE_TILE_SIZE * zoomLevel;
-
-            // Apply camera transformation
-            ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.scale(zoomLevel, zoomLevel);
-            ctx.translate(-canvas.width / (2 * zoomLevel) + cameraX, -canvas.height / (2 * zoomLevel) + cameraY);
-
-            map.forEach((tile, i) => {
-                const col = i % 20;
-                const row = Math.floor(i / 20);
-                const x = col * BASE_TILE_SIZE;
-                const y = row * BASE_TILE_SIZE;
-                
-                // 1. Background
-                ctx.fillStyle = tile.owner ? tile.color : '#101015';
-                ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                
-                // 2. Grid Lines
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
-
-                // 3. Units & Icons (render BEFORE selection highlight)
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-
-                if (tile.isHome) {
-                    ctx.font = '24px Arial';
-                    ctx.fillText('👑', x + BASE_TILE_SIZE/2, y + BASE_TILE_SIZE/2);
-                } else if (tile.unit) {
-                    const u = shopData[tile.unit];
-                    ctx.font = '20px Arial';
-                    ctx.fillText(u ? u.symbol : '?', x + BASE_TILE_SIZE/2, y + BASE_TILE_SIZE/2);
-                }
-
-                // 4. Selection Highlight (render AFTER icons to make them more visible)
-                if (selectedTileIndex === i) {
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x, y, BASE_TILE_SIZE, BASE_TILE_SIZE);
-                    ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x + 2, y + 2, BASE_TILE_SIZE - 4, BASE_TILE_SIZE - 4);
-                }
-
-                // 5. HP Text (Only if space allows or simplified)
-                // Small readable HP at bottom right
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(x + TILE_SIZE - 22, y + TILE_SIZE - 12, 20, 10); // Background pill
-                
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 9px sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText(tile.defense, x + BASE_TILE_SIZE - 4, y + BASE_TILE_SIZE - 3);
-            });
-            ctx.restore();
-        }
-
-        // --- SOCKETS ---
-        socket.on('connect', () => myId = socket.id);
-        
-        socket.on('init', (data) => {
-            map = data.map;
-            shopData = data.shop;
-            renderShop(data.shop);
-            updateUI(data.you);
-
-            // Set starting tile as selected (player's home base)
-            selectedTileIndex = data.you.homeIndex;
-            updateInspector(selectedTileIndex);
-
-            render();
-            // Initialize audio and start ambient music
-            initAudio();
-            if (musicEnabled) startAmbientMusic();
-        });
-
-        socket.on('map_update_single', (tile) => {
-            map[tile.id] = tile;
-            // Update inspector if we are looking at this tile
-            if(selectedTileIndex === tile.id) updateInspector(tile.id);
-            render();
-        });
-
-        socket.on('update_self', (p) => updateUI(p));
-        
-        socket.on('game_over', () => {
-            document.getElementById('gameOverOverlay').classList.remove('hidden');
-        });
-
-        socket.on('action_success', () => triggerCooldownUI());
-
-        socket.on('chat_receive', (data) => {
-            const div = document.createElement('div');
-            div.style.marginBottom = "5px";
-            div.innerHTML = `<b style="color:${data.color}">${data.user}:</b> ${data.msg}`;
-            document.getElementById('chat-msgs').appendChild(div);
-            // Auto scroll
-            document.getElementById('chat-msgs').scrollTop = document.getElementById('chat-msgs').scrollHeight;
-        });
-
-        // --- INPUTS ---
-        canvas.addEventListener('mousemove', (e) => {
-            const { index, x, y } = getMouseTile(e);
-            if(index < 0 || index >= map.length) {
-                tooltip.classList.add('hidden');
-                return;
-            }
-            
-            const tile = map[index];
-            const uName = tile.unit ? shopData[tile.unit].name : (tile.isHome ? "CAPITAL" : "Empty Space");
-            
-            tooltip.classList.remove('hidden');
-            tooltip.style.left = (e.clientX + 15) + 'px';
-            tooltip.style.top = (e.clientY + 15) + 'px';
-            tooltip.innerHTML = `
-                <div style="color:${tile.color}; font-weight:bold;">${uName}</div>
-                <div>DEF: ${tile.defense} / ${tile.maxDefense}</div>
-                ${tile.owner ? '<div style="font-size:10px; opacity:0.7">OCCUPIED</div>' : ''}
-            `;
-        });
-
-        canvas.addEventListener('click', (e) => {
-            if(isCooldown && selectedUnitKey) return; // Cant build on CD
-            
-            const { index } = getMouseTile(e);
-            if(index < 0 || index >= 400) return;
-            const tile = map[index];
-
-            selectedTileIndex = index;
-            render(); // redraw selection highlight
-            updateInspector(index);
-
-            // LOGIC: Build or Capture
-            if (tile.owner === myId && selectedUnitKey) {
-                playSFX('build');
-                socket.emit('place_unit', { tileIndex: index, unitType: selectedUnitKey });
-            } else if (tile.owner !== myId || !tile.unit) {
-                // If enemy, or empty owned tile (without build tool), try capture
-                if(tile.owner !== myId) {
-                    playSFX('capture');
-                    socket.emit('capture_attempt', index);
-                }
-            }
-        });
-
-        // --- UI HELPERS ---
-        function getMouseTile(e) {
-            const rect = canvas.getBoundingClientRect();
-            const screenX = e.clientX - rect.left;
-            const screenY = e.clientY - rect.top;
-
-            // Convert screen coordinates to world coordinates
-            // Reverse the transformation applied in render()
-            const worldX = (screenX - canvas.width / 2) / zoomLevel - cameraX + canvas.width / (2 * zoomLevel);
-            const worldY = (screenY - canvas.height / 2) / zoomLevel - cameraY + canvas.height / (2 * zoomLevel);
-
-            const BASE_TILE_SIZE = 40;
-            const col = Math.floor(worldX / BASE_TILE_SIZE);
-            const row = Math.floor(worldY / BASE_TILE_SIZE);
-            return { index: row * 20 + col, x: screenX, y: screenY };
-        }
-
-        function updateUI(player) {
-            document.getElementById('mpDisplay').innerText = Math.floor(player.mp);
-            document.getElementById('mpsDisplay').innerText = "+" + player.mps;
-        }
-
-        function triggerCooldownUI() {
-            isCooldown = true;
-            const bar = document.getElementById('cd-bar');
-
-            // Instantly drain the bar
-            bar.style.transition = 'none';
-            bar.style.width = '0%';
-            playSFX('action');
-
-            // Start recharging after a tiny delay
-            setTimeout(() => {
-                bar.style.transition = 'width 3s linear';
-                bar.style.width = '100%';
-            }, 50);
-
-            // Re-enable actions after cooldown
-            setTimeout(() => {
-                isCooldown = false;
-            }, 3000);
-        }
-
-        function renderShop(shop) {
-            const prodDiv = document.getElementById('shop-prod');
-            const milDiv = document.getElementById('shop-mil');
-
-            prodDiv.innerHTML = '<div class="shop-grid"></div>';
-            milDiv.innerHTML = '<div class="shop-grid"></div>';
-
-            const prodGrid = prodDiv.querySelector('.shop-grid');
-            const milGrid = milDiv.querySelector('.shop-grid');
-
-            for(let key in shop) {
-                const item = shop[key];
-                const el = document.createElement('div');
-                el.className = 'shop-item';
-                el.innerHTML = `
-                    <div class="shop-item-icon">${item.symbol}</div>
-                    <div class="shop-item-name">${item.name}</div>
-                    <div class="shop-item-cost">${item.cost} MP</div>
-                    <div class="shop-item-val">${item.type === 'prod' ? '+' + item.val + '/s' : '+' + item.val + ' DEF'}</div>
-                `;
-                el.onclick = () => {
-                    // Toggle Selection
-                    if (selectedUnitKey === key) {
-                        selectedUnitKey = null;
-                        el.classList.remove('selected');
-                    } else {
-                        document.querySelectorAll('.shop-item').forEach(d => d.classList.remove('selected'));
-                        selectedUnitKey = key;
-                        el.classList.add('selected');
-                    }
-                };
-
-                if(item.type === 'prod') prodGrid.appendChild(el);
-                else milGrid.appendChild(el);
-            }
-        }
-
-        function updateInspector(index) {
-            const tile = map[index];
-            const div = document.getElementById('inspector');
-            const info = document.getElementById('insp-info');
-            const btnDemolish = document.getElementById('btn-demolish');
-
-            if (!tile || tile.owner !== myId || !tile.unit) {
-                div.classList.add('hidden');
-                return;
-            }
-
-            div.classList.remove('hidden');
-            const unit = shopData[tile.unit];
-            info.innerHTML = `Structure: <b style="color:white">${unit.name}</b><br>Defense Bonus: ${unit.type==='mil'?unit.val:0}`;
-            
-            btnDemolish.onclick = () => {
-                socket.emit('demolish_unit', index);
-                div.classList.add('hidden');
-            };
-        }
-
-        // --- CAMERA CONTROLS & KEYBOARD INPUT ---
-        // WASD Navigation
-        const keys = {};
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            keys[key] = true;
-
-            // Arrow keys for tile selection
-            if (selectedTileIndex !== null && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-                e.preventDefault();
-                const col = selectedTileIndex % 20;
-                const row = Math.floor(selectedTileIndex / 20);
-                let newIndex = selectedTileIndex;
-
-                if (key === 'arrowup' && row > 0) newIndex = selectedTileIndex - 20;
-                if (key === 'arrowdown' && row < 19) newIndex = selectedTileIndex + 20;
-                if (key === 'arrowleft' && col > 0) newIndex = selectedTileIndex - 1;
-                if (key === 'arrowright' && col < 19) newIndex = selectedTileIndex + 1;
-
-                if (newIndex !== selectedTileIndex && newIndex >= 0 && newIndex < 400) {
-                    selectedTileIndex = newIndex;
-                    updateInspector(selectedTileIndex);
-                    render();
-                }
-            }
-
-            // Enter to build/conquer selected tile
-            if (key === 'enter' && selectedTileIndex !== null) {
-                e.preventDefault();
-                const tile = map[selectedTileIndex];
-                if (!tile) return;
-
-                // Build or Capture logic (same as click)
-                if (tile.owner === myId && selectedUnitKey) {
-                    playSFX('build');
-                    socket.emit('place_unit', { tileIndex: selectedTileIndex, unitType: selectedUnitKey });
-                } else if (tile.owner !== myId) {
-                    playSFX('capture');
-                    socket.emit('capture_attempt', selectedTileIndex);
-                }
-            }
-        });
-        document.addEventListener('keyup', (e) => {
-            keys[e.key.toLowerCase()] = false;
-        });
-
-        // Camera pan loop with bounds checking
-        const MAP_WIDTH = 20 * 40; // 20 tiles * 40px
-        const MAP_HEIGHT = 20 * 40;
-        const BOUNDS_PADDING = 100; // Allow some view outside the map
-
-        function clampCamera() {
-            const minX = -BOUNDS_PADDING;
-            const maxX = MAP_WIDTH + BOUNDS_PADDING;
-            const minY = -BOUNDS_PADDING;
-            const maxY = MAP_HEIGHT + BOUNDS_PADDING;
-
-            cameraX = Math.max(minX, Math.min(maxX, cameraX));
-            cameraY = Math.max(minY, Math.min(maxY, cameraY));
-        }
-
-        setInterval(() => {
-            let moved = false;
-            if (keys['w']) { cameraY += PAN_SPEED / zoomLevel; moved = true; }
-            if (keys['a']) { cameraX += PAN_SPEED / zoomLevel; moved = true; }
-            if (keys['s']) { cameraY -= PAN_SPEED / zoomLevel; moved = true; }
-            if (keys['d']) { cameraX -= PAN_SPEED / zoomLevel; moved = true; }
-
-            if (moved) {
-                clampCamera();
-                render();
-            }
-        }, 1000 / 60); // 60 FPS
-
-        // Mouse wheel zoom (with Ctrl)
-        canvas.addEventListener('wheel', (e) => {
-            if (!e.ctrlKey) return;
-            e.preventDefault();
-
-            const zoomChange = e.deltaY > 0 ? -ZOOM_SPEED : ZOOM_SPEED;
-            const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel + zoomChange));
-
-            // Zoom towards mouse position
-            const rect = canvas.getBoundingClientRect();
-            const screenX = e.clientX - rect.left;
-            const screenY = e.clientY - rect.top;
-            const worldX = screenX / zoomLevel + cameraX - (canvas.width / (2 * zoomLevel));
-            const worldY = screenY / zoomLevel + cameraY - (canvas.height / (2 * zoomLevel));
-
-            zoomLevel = newZoom;
-            cameraX = worldX - (screenX / zoomLevel - canvas.width / (2 * zoomLevel));
-            cameraY = worldY - (screenY / zoomLevel - canvas.height / (2 * zoomLevel));
-
-            render();
-        }, { passive: false });
-
-        // Ctrl + Click drag to pan
-        canvas.addEventListener('mousedown', (e) => {
-            if (!e.ctrlKey) return;
-            isPanning = true;
-            panStartX = e.clientX;
-            panStartY = e.clientY;
-            panStartCameraX = cameraX;
-            panStartCameraY = cameraY;
-            canvas.style.cursor = 'grabbing';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            const deltaX = (e.clientX - panStartX) / zoomLevel;
-            const deltaY = (e.clientY - panStartY) / zoomLevel;
-            cameraX = panStartCameraX + deltaX;
-            cameraY = panStartCameraY + deltaY;
-            clampCamera();
-            render();
-        });
-
-        document.addEventListener('mouseup', () => {
-            isPanning = false;
-            canvas.style.cursor = 'default';
-        });
-
-        // Chat
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') {
-                socket.emit('send_chat', e.target.value);
-                e.target.value = '';
-            }
-        });
-
-    </script>
-</body>
+        <div id="chat-box">
+            <div id="chat-msgs"></div>
+            <input type="text" id="chat-input" placeholder="Broadcast message..." />
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script type="module" src="/scripts/main.js"></script>
+    </body>
 </html>

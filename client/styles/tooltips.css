@@ -1,0 +1,19 @@
+/* Tooltip */
+
+#tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid var(--neon-cyan);
+    padding: 12px;
+    border-radius: 0;
+    z-index: 150;
+    color: var(--neon-cyan);
+    font-size: 12px;
+    min-width: 150px;
+    transform: translate(15px, 15px);
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.6),
+        inset 0 0 10px rgba(0, 255, 255, 0.2);
+    font-family: 'Orbitron', monospace;
+}

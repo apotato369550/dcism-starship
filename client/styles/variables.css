@@ -1,0 +1,18 @@
+/* Color & Theme Variables */
+:root {
+    --bg-dark: #0a0015;
+    --panel-bg: rgba(10, 5, 25, 0.98);
+    --neon-pink: #ff10fe;
+    --neon-magenta: #ff00ff;
+    --neon-blue: #00ffff;
+    --neon-cyan: #00f0ff;
+    --neon-purple: #b300ff;
+    --neon-green: #00ff66;
+    --text-main: #e0e0ff;
+    --text-dark: #808099;
+
+    /* Spacing & Sizing */
+    --tile-size: 40px;
+    --panel-width: 350px;
+    --sidebar-gap: 10px;
+}

@@ -86,6 +86,7 @@ PORT=3000
 
 ### Prerequisites
 - Node.js (v14 or higher)
+- npm
 
 ### Setup
 
@@ -102,13 +103,31 @@ npm install
 
 3. Start the server:
 ```bash
-node server/index.js
+npm start        # Production: node server/index.js
+npm run dev      # Development: with hot reload via nodemon
 ```
 
 4. Open your browser and navigate to:
 ```
 http://localhost:3000
 ```
+
+## Development
+
+### Code Quality
+- **Linting**: `npm run lint` - Check code with ESLint
+- **Auto-fix**: `npm run lint:fix` - Auto-fix ESLint issues
+- **Formatting**: `npm run format` - Format with Prettier
+
+### Testing
+- **Run tests**: `npm test` - Run all tests once
+- **Watch mode**: `npm run test:watch` - Run tests in watch mode
+
+### Project Structure (Refactored)
+- **Server**: Modularized with GameEngine, utilities, and configuration
+- **Client**: Separated into HTML, CSS modules, and JavaScript modules (ES6)
+- **Shared**: Common constants accessible to both client and server
+- **Tests**: Jest-based test framework with example tests
 
 ## How to Play
 

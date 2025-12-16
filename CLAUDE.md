@@ -14,18 +14,68 @@ DCISM Starship 2.0 is a real-time multiplayer territory control game with vaporw
 - **Configuration**: Environment variables via `.env` file
 - **No build process**: Runs directly with Node.js (CommonJS modules)
 
-### Project Structure
+### Project Structure (Refactored)
 ```
 starbase-dcism-io/
 ├── server/
-│   └── index.js            # Socket.IO server, game logic, and economy loop
+│   ├── index.js                    # Express setup, Socket.IO handlers, economy loop
+│   ├── config/
+│   │   ├── environment.js         # .env parsing and validation
+│   │   └── constants.js           # (shared in shared/)
+│   ├── services/
+│   │   ├── GameEngine.js          # Core game logic and state management
+│   │   └── (additional services as needed)
+│   └── utils/
+│       └── geometry.js            # Coordinate and distance calculations
 ├── client/
-│   └── index.html          # Full UI, canvas rendering, and client Socket.IO code
+│   ├── index.html                  # Minimal HTML structure
+│   ├── styles/
+│   │   ├── variables.css          # CSS custom properties and theme
+│   │   ├── base.css               # Body and global styles
+│   │   ├── overlays.css           # Login/game-over overlays
+│   │   ├── ui-panel.css           # Left sidebar UI
+│   │   ├── shop.css               # Shop grid
+│   │   ├── inspector.css          # Tile inspector
+│   │   ├── canvas.css             # Game area
+│   │   ├── chat.css               # Chat box
+│   │   └── tooltips.css           # Tooltip styles
+│   └── scripts/
+│       ├── main.js                # Application entry point
+│       ├── socket/
+│       │   └── socketClient.js    # Socket.IO wrapper
+│       ├── game/
+│       │   ├── GameState.js       # Client game state
+│       │   ├── Renderer.js        # Canvas rendering
+│       │   └── Camera.js          # Camera/viewport control
+│       ├── input/
+│       │   ├── MouseHandler.js    # Mouse event handling
+│       │   └── KeyboardHandler.js # Keyboard event handling
+│       └── ui/
+│           ├── UIManager.js       # UI coordination
+│           ├── StatsUI.js         # Stats display
+│           ├── ShopUI.js          # Shop panel
+│           ├── InspectorUI.js     # Tile inspector
+│           ├── ChatUI.js          # Chat interface
+│           └── AudioManager.js    # Audio system
+├── shared/
+│   └── constants.js               # Shared game constants
 ├── config/
-│   └── tiles.js            # Tile/unit type definitions
-├── .env                    # Environment variables and game config
-├── package.json            # Dependencies
-└── CLAUDE.md               # This file
+│   └── tiles.js                   # Unit/building definitions
+├── tests/
+│   ├── server/
+│   │   └── utils/
+│   │       └── geometry.test.js   # Geometry utility tests
+│   └── shared/
+│       └── constants.test.js      # Constants tests
+├── docs/
+│   ├── ARCHITECTURE.md            # Architecture guide
+│   └── CONTRIBUTING.md            # Contribution guidelines
+├── .env                           # Environment variables
+├── .eslintrc.json                 # ESLint configuration
+├── .prettierrc.json               # Prettier configuration
+├── jest.config.js                 # Jest test configuration
+├── package.json                   # Dependencies and scripts
+└── CLAUDE.md                      # This file (developer guidance)
 ```
 
 ### Communication Flow
@@ -59,7 +109,8 @@ Defined in `config/tiles.js`:
 
 ### Start the server
 ```bash
-node server/index.js
+npm start           # Production mode
+npm run dev         # Development mode with nodemon (hot reload)
 ```
 The game runs on `http://localhost:3000`
 
@@ -68,10 +119,51 @@ The game runs on `http://localhost:3000`
 npm install
 ```
 
-### No build/test commands
-The project has no build process, linting, or tests configured. All code runs directly.
+### Linting and Code Quality
+```bash
+npm run lint        # Check code with ESLint
+npm run lint:fix    # Auto-fix ESLint issues
+npm run format      # Format code with Prettier
+```
+
+### Testing
+```bash
+npm test            # Run all tests once
+npm run test:watch  # Run tests in watch mode
+```
+Tests are located in `tests/` and use Jest framework.
+
+## Module System
+
+### Client-Side (ES6 Modules)
+Client code uses ES6 modules with `import`/`export` syntax. All modules are ES6 and run directly in the browser (no build step):
+- **Entry point**: `client/scripts/main.js`
+- **Module organization**: Organized by concern (game, UI, input, audio, socket)
+- **Import paths**: Use relative paths (e.g., `import { Renderer } from './game/Renderer.js'`)
+
+### Server-Side (CommonJS)
+Server code uses CommonJS (`require`/`module.exports`):
+- **Entry point**: `server/index.js`
+- **Services**: GameEngine and utilities in `server/services/` and `server/utils/`
+- **Configuration**: Environment parsing in `server/config/`
+- **No build step**: Runs directly with Node.js
+
+### Shared Code
+Common constants and types are in `shared/constants.js`:
+- Accessible to both client and server
+- Use `require()` in server, `import` in client if needed
 
 ## Making Changes
+
+### Adding New Modules
+1. **Client modules**: Create in `client/scripts/` with appropriate subfolder
+2. **Export as class or functions**: `export class MyClass {}` or `export function myFunc() {}`
+3. **Import in main.js**: `import { MyClass } from './path/to/MyClass.js'`
+
+### Adding New Services (Server)
+1. **Create in `server/services/`**: `module.exports = class MyService {}`
+2. **Import in `server/index.js`**: `const MyService = require('./services/MyService')`
+3. **Initialize and use**: `const service = new MyService(); service.method();`
 
 ### Modifying game balance
 All game configuration is in `.env` file:
