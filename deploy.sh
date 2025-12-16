@@ -50,11 +50,10 @@ fi
 echo ""
 echo -e "${BLUE}Step 1: Connecting to server...${NC}"
 
-# SSH into server and execute deployment commands
-ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash << 'REMOTE_SCRIPT'
+# Create the remote deployment script as a separate variable
+read -r -d '' DEPLOY_SCRIPT << 'DEPLOY_EOF' || true
 set -e
 
-# Configuration (must match local values)
 SERVER_FOLDER="starship.dcism.org"
 REPO_URL="https://github.com/apotato369550/dcism-starship.git"
 PORT="20145"
@@ -64,32 +63,26 @@ echo ""
 echo "Connected to remote server"
 echo ""
 
-# Navigate to home directory
 cd ~
-
 echo "Current directory: $(pwd)"
 echo ""
 
-# Check if folder exists
 if [ -d "$SERVER_FOLDER" ]; then
     echo "Folder $SERVER_FOLDER already exists"
     cd "$SERVER_FOLDER"
 
-    # Check if it's a git repository
     if [ -d ".git" ]; then
         echo "Git repository detected, pulling latest changes..."
         git pull origin main
     else
         echo "Not a git repository, initializing..."
-        # Backup existing folder contents
         if [ -n "$(ls -A .)" ]; then
-            echo "Backing up existing contents to ${SERVER_FOLDER}.backup..."
+            echo "Backing up existing contents..."
             cd ..
             mv "$SERVER_FOLDER" "${SERVER_FOLDER}.backup.$(date +%s)"
             mkdir -p "$SERVER_FOLDER"
             cd "$SERVER_FOLDER"
         fi
-        # Clone repository
         echo "Cloning repository..."
         git clone "$REPO_URL" .
     fi
@@ -97,8 +90,6 @@ else
     echo "Creating new deployment folder..."
     mkdir -p "$SERVER_FOLDER"
     cd "$SERVER_FOLDER"
-
-    # Clone repository
     echo "Cloning repository..."
     git clone "$REPO_URL" .
 fi
@@ -107,23 +98,19 @@ echo ""
 echo "Current directory: $(pwd)"
 echo ""
 
-# Install/update dependencies
 echo "Installing dependencies..."
 npm install --production
 
-# Update .env file with production port
 echo ""
 echo "Configuring environment variables..."
 if [ -f .env ]; then
-    # Update existing PORT or add new one
     if grep -q "^PORT=" .env; then
         sed -i "s/^PORT=.*/PORT=$PORT/" .env
     else
         echo "PORT=$PORT" >> .env
     fi
 else
-    # Create .env if it doesn't exist
-    cat > .env << EOF
+    cat > .env << 'ENVEOF'
 # Game Configuration
 
 # Map Settings
@@ -143,23 +130,20 @@ BASE_TILE_DEFENSE=1
 BASE_TILE_MAX_DEFENSE=1
 
 # Server
-PORT=$PORT
-EOF
+PORT=20145
+ENVEOF
 fi
 
 echo ".env configured with PORT=$PORT"
 echo ""
 
-# Stop existing PM2 process if it exists
 echo "Stopping any existing PM2 processes..."
 pm2 stop "$APP_NAME" 2>/dev/null || true
 pm2 delete "$APP_NAME" 2>/dev/null || true
 
-# Start application with PM2
 echo "Starting application with PM2..."
-pm2 start "npm start" --name "$APP_NAME" --port "$PORT"
+pm2 start "npm start" --name "$APP_NAME"
 
-# Save PM2 configuration for startup
 echo "Saving PM2 configuration..."
 pm2 save
 
@@ -170,17 +154,20 @@ echo "=========================================="
 echo ""
 echo "Application Name: $APP_NAME"
 echo "Port: $PORT"
-echo "URL: http://$(hostname):$PORT"
 echo ""
 echo "Useful PM2 commands:"
 echo "  pm2 list                    # View all processes"
 echo "  pm2 logs $APP_NAME          # View live logs"
 echo "  pm2 stop $APP_NAME          # Stop the app"
 echo "  pm2 restart $APP_NAME       # Restart the app"
-echo "  pm2 delete $APP_NAME        # Delete from PM2"
 echo ""
 
-REMOTE_SCRIPT
+DEPLOY_EOF
+
+# Execute the script on the remote server
+ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash << REMOTE_EXEC
+$DEPLOY_SCRIPT
+REMOTE_EXEC
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
