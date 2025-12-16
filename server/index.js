@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
 const path = require('path');
+const SHOP = require('../config/tiles');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,36 +15,29 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
-// --- CONFIGURATION ---
-const MAP_WIDTH = 20; 
-const MAP_HEIGHT = 20;
+// --- CONFIGURATION FROM .env ---
+const MAP_WIDTH = parseInt(process.env.MAP_WIDTH) || 20;
+const MAP_HEIGHT = parseInt(process.env.MAP_HEIGHT) || 20;
 const MAP_SIZE = MAP_WIDTH * MAP_HEIGHT;
-const COOLDOWN_MS = 3000; // Reduced cooldown for faster gameplay on big map
-
-// --- UNIT DEFINITIONS ---
-// type: 'prod' (income) or 'mil' (defense bonus)
-const SHOP = {
-    // Production
-    'solar_siphon':   { name: "Solar Siphon",  type: 'prod', cost: 20,  val: 1,  symbol: '⚡', upgrade: 'flux_reactor' },
-    'flux_reactor':   { name: "Flux Reactor",  type: 'prod', cost: 150, val: 5,  symbol: '💠', upgrade: 'void_harvester' },
-    'void_harvester': { name: "Void Harvester",type: 'prod', cost: 600, val: 25, symbol: '🌌', upgrade: null },
-    
-    // Military (val = defense bonus)
-    'orbital_wall':   { name: "Orbital Wall",  type: 'mil',  cost: 50,  val: 50, symbol: '🛡️', upgrade: 'laser_battery' },
-    'laser_battery':  { name: "Laser Battery", type: 'mil',  cost: 300, val: 150,symbol: '🔭', upgrade: null }
-};
+const COOLDOWN_MS = parseInt(process.env.COOLDOWN_MS) || 3000;
+const STARTING_ENERGY = parseInt(process.env.STARTING_ENERGY) || 10;
+const STARTING_ENERGY_PER_SEC = parseInt(process.env.STARTING_ENERGY_PER_SEC) || 0;
+const BASE_TILE_DEFENSE = parseInt(process.env.BASE_TILE_DEFENSE) || 10;
+const BASE_TILE_MAX_DEFENSE = parseInt(process.env.BASE_TILE_MAX_DEFENSE) || 10;
+const ECONOMY_TICK_MS = parseInt(process.env.ECONOMY_TICK_MS) || 1000;
+const PORT = parseInt(process.env.PORT) || 3000;
 
 // --- GAME STATE ---
 let gameMap = [];
 for(let i=0; i<MAP_SIZE; i++) {
-    gameMap.push({ 
-        id: i, 
-        owner: null, 
-        defense: 10, 
-        maxDefense: 10, // Base HP
-        unit: null, 
+    gameMap.push({
+        id: i,
+        owner: null,
+        defense: BASE_TILE_DEFENSE,
+        maxDefense: BASE_TILE_MAX_DEFENSE,
+        unit: null,
         isHome: false, // Is this a capital city?
-        color: '#2b1d3d' 
+        color: '#2b1d3d'
     });
 }
 
@@ -127,10 +122,10 @@ io.on('connection', (socket) => {
         const spawnIndex = findSpawnPoint();
         
         players[socket.id] = { 
-            id: socket.id, 
+            id: socket.id,
             username: username.substring(0, 15) || "Drifter",
-            mp: 100, // Starting Cash
-            mps: 1, // Base income
+            mp: STARTING_ENERGY,
+            mps: STARTING_ENERGY_PER_SEC,
             lastMoveTime: 0,
             homeIndex: spawnIndex,
             color: neonColors[Math.floor(Math.random() * neonColors.length)] 
@@ -294,6 +289,6 @@ setInterval(() => {
     }
 }, 1000);
 
-server.listen(3000, () => {
+server.listen(PORT, () => {
     console.log('🚀 DCISM Starship 2.0 Launching on *:3000');
 });
