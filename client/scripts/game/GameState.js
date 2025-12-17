@@ -3,6 +3,8 @@ export class GameState {
     constructor() {
         this.map = [];
         this.myId = null;
+        this.myName = null; // Current player's callsign
+        this.players = {}; // Map of player ID to player data {id, username, color, ...}
         this.shopData = {};
         this.selectedUnitKey = null;
         this.selectedTileIndex = null;
@@ -14,6 +16,18 @@ export class GameState {
         this.shopData = data.shop;
         this.selectedTileIndex = data.you.homeIndex;
         this.myId = data.you.id; // Store player ID for comparison
+        this.myName = data.you.username;
+        // Store all players data for tooltip display
+        if (data.players) {
+            this.players = data.players;
+        }
+    }
+
+    getPlayerName(playerId) {
+        if (this.players[playerId]) {
+            return this.players[playerId].username;
+        }
+        return 'Unknown Player';
     }
 
     updateTile(tile) {

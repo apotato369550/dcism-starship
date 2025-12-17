@@ -54,11 +54,11 @@ export class Renderer {
                 this.ctx.fillText(u ? u.symbol : '?', x + this.baseSize / 2, y + this.baseSize / 2);
             }
 
-            // Your capital highlight
+            // Your capital highlight (full border on all 4 sides)
             if (tile.isHome && tile.owner === this.gameState.myId) {
                 this.ctx.strokeStyle = '#ffff00';
-                this.ctx.lineWidth = 5;
-                this.ctx.strokeRect(x - 2, y - 2, tileSize + 4, tileSize + 4);
+                this.ctx.lineWidth = 4;
+                this.ctx.strokeRect(x - 2, y - 2, this.baseSize + 4, this.baseSize + 4);
             }
 
             // Selection highlight
@@ -102,11 +102,15 @@ export class Renderer {
         }
 
         const tile = this.gameState.map[tileIndex];
-        const uName = tile.unit
-            ? this.gameState.shopData[tile.unit].name
-            : tile.isHome
-                ? 'CAPITAL'
-                : 'Empty Space';
+        let uName;
+        if (tile.unit) {
+            uName = this.gameState.shopData[tile.unit].name;
+        } else if (tile.isHome) {
+            const ownerName = this.gameState.getPlayerName(tile.owner);
+            uName = `${ownerName}'s Capital`;
+        } else {
+            uName = 'Empty Space';
+        }
 
         tooltip.classList.remove('hidden');
         tooltip.style.left = clientX + 15 + 'px';

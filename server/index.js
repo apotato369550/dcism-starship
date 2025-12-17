@@ -46,6 +46,7 @@ io.on('connection', socket => {
 
         // Create bot players for single player mode
         if (mode === 'single') {
+            console.log(`[SERVER] Creating ${botCount} bots for single-player game`);
             for (let i = 0; i < botCount; i++) {
                 const botId = `bot-${Date.now()}-${i}`;
                 const botPlayer = gameEngine.addPlayer(botId, botNames[i]);
@@ -53,6 +54,7 @@ io.on('connection', socket => {
                 botTile.defense = 100;
                 botTile.maxDefense = 100;
                 activeBots.push(botId); // Track bot for AI decisions
+                console.log(`[SERVER] Added bot ${botId} (${botNames[i]}) to activeBots. Total: ${activeBots.length}`);
                 io.emit('map_update_single', botTile);
                 io.emit('chat_receive', {
                     user: 'SYSTEM',
@@ -62,7 +64,7 @@ io.on('connection', socket => {
             }
         }
 
-        socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP });
+        socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP, players: gameEngine.players });
         io.emit('map_update_single', tile);
         io.emit('chat_receive', {
             user: 'SYSTEM',
@@ -237,6 +239,10 @@ setInterval(() => {
 
     // Make AI decisions for active bots
     if (activeBots.length > 0) {
+        // Only log occasionally to avoid spam
+        if (Math.random() < 0.1) {
+            console.log(`[ECONOMY] Ticking with ${activeBots.length} active bots`);
+        }
         aiEngine.makeDecisions(activeBots);
     }
 }, config.ECONOMY_TICK_MS);

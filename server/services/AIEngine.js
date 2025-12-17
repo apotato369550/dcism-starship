@@ -16,16 +16,22 @@ class AIEngine {
      */
     makeDecisions(botSocketIds) {
         botSocketIds.forEach(botId => {
-            if (!this.gameEngine.players[botId]) return;
+            if (!this.gameEngine.players[botId]) {
+                console.warn(`[AI] Bot ${botId} not found in players`);
+                return;
+            }
 
             // Throttle decisions to avoid spam (one decision per 2 seconds max)
             if (!this.botDecisions[botId]) {
                 this.botDecisions[botId] = 0;
             }
-            if (Date.now() - this.botDecisions[botId] < 2000) return;
+            if (Date.now() - this.botDecisions[botId] < 2000) {
+                return; // Still in throttle period
+            }
 
             const decision = this.calculateBotDecision(botId);
             if (decision) {
+                console.log(`[AI] ${this.gameEngine.players[botId].username} decision:`, decision.type);
                 this.executeBotDecision(botId, decision);
                 this.botDecisions[botId] = Date.now();
             }
@@ -37,7 +43,11 @@ class AIEngine {
      */
     calculateBotDecision(botId) {
         const bot = this.gameEngine.players[botId];
-        if (!bot || !this.gameEngine.canPlayerAct(botId)) return null;
+        if (!bot) return null;
+
+        if (!this.gameEngine.canPlayerAct(botId)) {
+            return null; // Still on cooldown
+        }
 
         // Strategy priority:
         // 1. Attack enemy capital if adjacent and affordable
@@ -48,7 +58,10 @@ class AIEngine {
 
         // Find enemy players
         const enemies = Object.values(this.gameEngine.players).filter(p => p.id !== botId);
-        if (enemies.length === 0) return null; // No enemies, no action needed
+        if (enemies.length === 0) {
+            console.log(`[AI] ${bot.username} - No enemies found`);
+            return null; // No enemies, no action needed
+        }
 
         // Find nearest enemy
         const nearestEnemy = this.findNearestEnemy(bot, enemies);
