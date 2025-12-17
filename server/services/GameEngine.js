@@ -88,7 +88,9 @@ class GameEngine {
     canPlayerAct(socketId) {
         const player = this.players[socketId];
         if (!player) return false;
-        return Date.now() - player.lastMoveTime >= config.COOLDOWN_MS;
+        // Use different cooldown for bots vs human players
+        const cooldownMs = socketId.startsWith('bot-') ? config.AI_COOLDOWN_MS : config.COOLDOWN_MS;
+        return Date.now() - player.lastMoveTime >= cooldownMs;
     }
 
     setPlayerCooldown(socketId) {

@@ -7,7 +7,6 @@ class AIEngine {
         this.gameEngine = gameEngine;
         this.io = io;
         this.shop = shop;
-        this.botDecisions = {}; // Track last decision time for each bot
     }
 
     /**
@@ -21,19 +20,15 @@ class AIEngine {
                 return;
             }
 
-            // Throttle decisions to avoid spam (one decision per 1.5 seconds max for more aggressive play)
-            if (!this.botDecisions[botId]) {
-                this.botDecisions[botId] = 0;
-            }
-            if (Date.now() - this.botDecisions[botId] < 1500) {
-                return; // Still in throttle period
+            // Check if bot can act (respects AI_COOLDOWN_MS via GameEngine)
+            if (!this.gameEngine.canPlayerAct(botId)) {
+                return; // Still on cooldown
             }
 
             const decision = this.calculateBotDecision(botId);
             if (decision) {
                 console.log(`[AI] ${this.gameEngine.players[botId].username} decision:`, decision.type);
                 this.executeBotDecision(botId, decision);
-                this.botDecisions[botId] = Date.now();
             }
         });
     }
@@ -51,7 +46,7 @@ class AIEngine {
 
         // Strategy priority:
         // 1. Attack enemy capital if adjacent and affordable
-        // 2. Capture adjacent enemy tiles if affordable
+        // 2. Capture adjacent enemy/neutral tiles to expand toward enemy
         // 3. Build defense on home or front-line tiles
         // 4. Build production to generate more income
         // 5. Generate energy manually if low
@@ -79,16 +74,19 @@ class AIEngine {
             }
         }
 
-        // Find tiles adjacent to enemy territory that we can capture
-        const captureOptions = this.findCaptureTargets(botId, nearestEnemy);
-        if (captureOptions.length > 0) {
-            // Sort by defense cost (easier targets first, with reduced randomness for more focused aggression)
-            captureOptions.sort((a, b) => {
-                const costDiff = a.cost - b.cost;
-                return costDiff + (Math.random() - 0.5) * 8; // Reduced randomness for more aggressive focus
+        // Find all tiles we can capture (enemy and neutral) to expand toward enemy
+        const expansionOptions = this.findExpansionTargets(botId, nearestEnemy);
+        if (expansionOptions.length > 0) {
+            // Sort by priority: closer to enemy = better, and lower defense cost = better
+            expansionOptions.sort((a, b) => {
+                // Weight distance heavily (closer is much better)
+                const distanceScore = (a.distanceToEnemy - b.distanceToEnemy) * 3;
+                const costScore = (a.cost - b.cost) * 0.5;
+                const randomness = (Math.random() - 0.5) * 5;
+                return distanceScore + costScore + randomness;
             });
 
-            const target = captureOptions[0];
+            const target = expansionOptions[0];
             if (bot.mp >= target.cost * 1.05) { // Aggressive: only 5% safety margin
                 return {
                     type: 'capture',
@@ -136,7 +134,7 @@ class AIEngine {
         // Generate energy if we're low and no good build target
         // But first, try to attack cheap/undefended tiles if desperate
         if (bot.mp < 30) {
-            const cheapCaptures = this.findCaptureTargets(botId, nearestEnemy)
+            const cheapCaptures = this.findExpansionTargets(botId, nearestEnemy)
                 .filter(t => t.cost <= bot.mp + 5); // Can afford with current energy
 
             if (cheapCaptures.length > 0) {
@@ -176,20 +174,22 @@ class AIEngine {
     }
 
     /**
-     * Find tiles we can capture near the enemy
+     * Find tiles we can capture to expand toward the enemy
+     * Includes both neutral and enemy tiles, prioritizing movement toward enemy capital
      */
-    findCaptureTargets(botId, enemy) {
+    findExpansionTargets(botId, enemy) {
         const targets = [];
         const MAP_WIDTH = config.MAP_WIDTH;
 
-        // Get all enemy tiles
-        const enemyTiles = this.gameEngine.gameMap
-            .map((tile, idx) => (tile.owner === enemy.id ? idx : -1))
+        // Get all tiles adjacent to our territory
+        const ourTiles = this.gameEngine.gameMap
+            .map((tile, idx) => (tile.owner === botId ? idx : -1))
             .filter(idx => idx !== -1);
 
-        // Find tiles adjacent to enemy tiles
-        enemyTiles.forEach(enemyTile => {
-            const { x, y } = geometry.getCoords(enemyTile);
+        // Find all tiles adjacent to our territory that we can capture
+        const seenIndices = new Set();
+        ourTiles.forEach(ourTile => {
+            const { x, y } = geometry.getCoords(ourTile);
             const neighbors = [
                 { x: x - 1, y: y },
                 { x: x + 1, y: y },
@@ -200,14 +200,23 @@ class AIEngine {
             neighbors.forEach(n => {
                 if (n.x >= 0 && n.x < MAP_WIDTH && n.y >= 0 && n.y < MAP_WIDTH) {
                     const idx = n.y * MAP_WIDTH + n.x;
+
+                    // Skip if already seen or if it's ours
+                    if (seenIndices.has(idx)) return;
+                    seenIndices.add(idx);
+
                     const tile = this.gameEngine.getTile(idx);
 
-                    // Can capture if neutral or enemy-owned (but not ours or home)
-                    if (tile && tile.owner !== botId && !tile.isHome && this.isAdjacent(idx, botId)) {
+                    // Can capture if: not ours, not a capital, adjacent to our territory
+                    if (tile && tile.owner !== botId && !tile.isHome) {
+                        // Calculate distance to enemy capital
+                        const distanceToEnemy = geometry.getDistance(idx, enemy.homeIndex);
+
                         targets.push({
                             index: idx,
                             cost: tile.defense,
                             owner: tile.owner,
+                            distanceToEnemy: distanceToEnemy,
                         });
                     }
                 }
@@ -256,7 +265,7 @@ class AIEngine {
         // Prioritize: empty owned tiles, then front-line tiles
         let target = null;
 
-        // First pass: empty tiles without units
+        // First pass: empty tiles without units (excluding capital)
         for (let idx of ownedTiles) {
             const tile = this.gameEngine.getTile(idx);
             if (!tile.unit && !tile.isHome) {
@@ -266,13 +275,8 @@ class AIEngine {
             }
         }
 
-        // If no empty tile found, use home if it has no unit
-        if (!target) {
-            const homeTile = this.gameEngine.getTile(bot.homeIndex);
-            if (!homeTile.unit) {
-                target = bot.homeIndex;
-            }
-        }
+        // If no empty tile found, return null (don't build on capital)
+        // Bot will need to capture more territory first
 
         return target
             ? {
@@ -323,22 +327,19 @@ class AIEngine {
         switch (decision.type) {
         case 'generate':
             bot.mp += 1;
-            // Broadcast to ALL clients so everyone sees bot actions
-            this.io.emit('chat_receive', {
-                user: 'SYSTEM',
-                msg: `${bot.username} generated 1 energy.`,
-                color: '#888',
-            });
+            // Silent energy generation - no chat message
             break;
 
         case 'build': {
             const tile = this.gameEngine.getTile(decision.tileIndex);
             const unitInfo = this.shop[decision.unitType];
 
+            // Cannot build on capital tiles
             if (
                 tile &&
                     unitInfo &&
                     tile.owner === botId &&
+                    !tile.isHome &&
                     bot.mp >= unitInfo.cost &&
                     this.gameEngine.canPlayerAct(botId)
             ) {
@@ -355,7 +356,7 @@ class AIEngine {
                 this.io.emit('map_update_single', tile);
                 this.io.emit('chat_receive', {
                     user: 'SYSTEM',
-                    msg: `${bot.username} built a ${unitInfo.name}.`,
+                    msg: `${bot.username} constructed ${unitInfo.name}.`,
                     color: '#888',
                 });
             }

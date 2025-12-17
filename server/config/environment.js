@@ -9,6 +9,7 @@ module.exports = {
         parseInt(process.env.MAP_WIDTH) * parseInt(process.env.MAP_HEIGHT) ||
         SHARED_CONSTANTS.MAP_SIZE,
     COOLDOWN_MS: parseInt(process.env.COOLDOWN_MS) || SHARED_CONSTANTS.COOLDOWN_MS,
+    AI_COOLDOWN_MS: parseInt(process.env.AI_COOLDOWN_MS) || 7000,
     STARTING_ENERGY: parseInt(process.env.STARTING_ENERGY) || SHARED_CONSTANTS.STARTING_ENERGY,
     STARTING_ENERGY_PER_SEC:
         parseInt(process.env.STARTING_ENERGY_PER_SEC) || SHARED_CONSTANTS.STARTING_ENERGY_PER_SEC,

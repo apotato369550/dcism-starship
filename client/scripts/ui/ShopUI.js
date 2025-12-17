@@ -8,6 +8,7 @@ export class ShopUI {
         this.buildBtn = document.getElementById('modal-build-btn');
         this.currentSelectedUnit = null;
         this.buildMode = false;
+        this.eventListenersSetup = false; // Track if event listeners are already set up
     }
 
     render(onBuildModeChanged) {
@@ -26,16 +27,21 @@ export class ShopUI {
             this.container.appendChild(el);
         }
 
-        // Setup modal close button
-        this.modalClose.addEventListener('click', () => this.hideModal());
+        // Setup modal event listeners only once
+        if (!this.eventListenersSetup) {
+            // Setup modal close button
+            this.modalClose.addEventListener('click', () => this.hideModal());
 
-        // Setup build button
-        this.buildBtn.addEventListener('click', () => this.enterBuildMode());
+            // Setup build button
+            this.buildBtn.addEventListener('click', () => this.enterBuildMode());
 
-        // Close modal when clicking outside
-        this.modal.addEventListener('click', e => {
-            if (e.target === this.modal) this.hideModal();
-        });
+            // Close modal when clicking outside
+            this.modal.addEventListener('click', e => {
+                if (e.target === this.modal) this.hideModal();
+            });
+
+            this.eventListenersSetup = true;
+        }
     }
 
     showModal(unitKey, item) {

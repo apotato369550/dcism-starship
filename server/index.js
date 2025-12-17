@@ -55,6 +55,25 @@ io.on('connection', socket => {
                 botTile.maxDefense = 100;
                 activeBots.push(botId); // Track bot for AI decisions
                 console.log(`[SERVER] Added bot ${botId} (${botNames[i]}) to activeBots. Total: ${activeBots.length}`);
+                console.log(`[SERVER] Bot tile ${botTile.id} at homeIndex ${botPlayer.homeIndex} color ${botPlayer.color}`);
+            }
+        }
+
+        // Send init AFTER bots are created so client gets full player list
+        socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP, players: gameEngine.players });
+        io.emit('map_update_single', tile);
+        io.emit('chat_receive', {
+            user: 'SYSTEM',
+            msg: `${player.username} has established a colony.`,
+            color: '#fff',
+        });
+
+        // Broadcast bot tiles and messages AFTER init
+        if (mode === 'single') {
+            for (let i = 0; i < botCount; i++) {
+                const botId = activeBots[activeBots.length - botCount + i];
+                const botPlayer = gameEngine.players[botId];
+                const botTile = gameEngine.getTile(botPlayer.homeIndex);
                 io.emit('map_update_single', botTile);
                 io.emit('chat_receive', {
                     user: 'SYSTEM',
@@ -65,14 +84,6 @@ io.on('connection', socket => {
             // Broadcast updated player list to all clients
             io.emit('players_update', gameEngine.players);
         }
-
-        socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP, players: gameEngine.players });
-        io.emit('map_update_single', tile);
-        io.emit('chat_receive', {
-            user: 'SYSTEM',
-            msg: `${player.username} has established a colony.`,
-            color: '#fff',
-        });
     });
 
     // CHAT
@@ -105,7 +116,8 @@ io.on('connection', socket => {
         const tile = gameEngine.getTile(tileIndex);
         const unitInfo = SHOP[unitType];
 
-        if (tile && unitInfo && tile.owner === socket.id && player.mp >= unitInfo.cost) {
+        // Cannot build on capital tiles
+        if (tile && unitInfo && tile.owner === socket.id && !tile.isHome && player.mp >= unitInfo.cost) {
             player.mp -= unitInfo.cost;
             gameEngine.setPlayerCooldown(socket.id);
 
