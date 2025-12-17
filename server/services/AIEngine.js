@@ -310,7 +310,12 @@ class AIEngine {
         switch (decision.type) {
         case 'generate':
             bot.mp += 1;
-            this.io.to(botId).emit('update_self', bot);
+            // Broadcast to ALL clients so everyone sees bot actions
+            this.io.emit('chat_receive', {
+                user: 'SYSTEM',
+                msg: `${bot.username} generated 1 energy.`,
+                color: '#888',
+            });
             break;
 
         case 'build': {
@@ -333,8 +338,13 @@ class AIEngine {
                     tile.defense += unitInfo.val;
                 }
 
+                console.log(`[AI] ${bot.username} built ${decision.unitType} on tile ${decision.tileIndex}`);
                 this.io.emit('map_update_single', tile);
-                this.io.to(botId).emit('update_self', bot);
+                this.io.emit('chat_receive', {
+                    user: 'SYSTEM',
+                    msg: `${bot.username} built a ${unitInfo.name}.`,
+                    color: '#888',
+                });
             }
             break;
         }
@@ -357,8 +367,13 @@ class AIEngine {
 
                 this.gameEngine.updateTilePlayer(decision.tileIndex, botId, bot.color);
 
+                console.log(`[AI] ${bot.username} captured tile ${decision.tileIndex}`);
                 this.io.emit('map_update_single', tile);
-                this.io.to(botId).emit('update_self', bot);
+                this.io.emit('chat_receive', {
+                    user: 'SYSTEM',
+                    msg: `${bot.username} captured enemy territory!`,
+                    color: '#ff9900',
+                });
 
                 // Check win condition
                 if (wasHome && previousOwner && this.gameEngine.players[previousOwner]) {
