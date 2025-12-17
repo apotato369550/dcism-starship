@@ -54,6 +54,13 @@ export class Renderer {
                 this.ctx.fillText(u ? u.symbol : '?', x + this.baseSize / 2, y + this.baseSize / 2);
             }
 
+            // Your capital highlight
+            if (tile.isHome && tile.owner === this.gameState.myId) {
+                this.ctx.strokeStyle = '#ffff00';
+                this.ctx.lineWidth = 5;
+                this.ctx.strokeRect(x - 2, y - 2, tileSize + 4, tileSize + 4);
+            }
+
             // Selection highlight
             if (this.gameState.selectedTileIndex === i) {
                 this.ctx.strokeStyle = '#fff';

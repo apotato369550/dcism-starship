@@ -7,6 +7,7 @@ const path = require('path');
 // Import configurations and services
 const config = require('./config/environment');
 const GameEngine = require('./services/GameEngine');
+const AIEngine = require('./services/AIEngine');
 const geometry = require('./utils/geometry');
 const SHOP = require('../config/tiles');
 
@@ -23,7 +24,9 @@ app.get('/', (req, res) => {
 
 // Initialize Game Engine
 const gameEngine = new GameEngine();
+const aiEngine = new AIEngine(gameEngine, io, SHOP);
 const botNames = ['REPLICANT-01', 'REPLICANT-02', 'REPLICANT-03', 'REPLICANT-04'];
+const activeBots = []; // Track bot IDs for AI decisions
 
 // --- SOCKET EVENT HANDLERS ---
 io.on('connection', socket => {
@@ -44,10 +47,12 @@ io.on('connection', socket => {
         // Create bot players for single player mode
         if (mode === 'single') {
             for (let i = 0; i < botCount; i++) {
-                const botPlayer = gameEngine.addPlayer(`bot-${Date.now()}-${i}`, botNames[i]);
+                const botId = `bot-${Date.now()}-${i}`;
+                const botPlayer = gameEngine.addPlayer(botId, botNames[i]);
                 const botTile = gameEngine.getTile(botPlayer.homeIndex);
                 botTile.defense = 100;
                 botTile.maxDefense = 100;
+                activeBots.push(botId); // Track bot for AI decisions
                 io.emit('map_update_single', botTile);
                 io.emit('chat_receive', {
                     user: 'SYSTEM',
@@ -163,6 +168,11 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
         if (gameEngine.players[socket.id]) {
             gameEngine.removePlayer(socket.id);
+            // Remove from activeBots if it's a bot
+            const botIndex = activeBots.indexOf(socket.id);
+            if (botIndex > -1) {
+                activeBots.splice(botIndex, 1);
+            }
             gameEngine.gameMap.forEach(tile => {
                 if (tile.owner === socket.id) {
                     io.emit('map_update_single', tile);
@@ -181,6 +191,24 @@ function killPlayer(socketId) {
         }
     });
     gameEngine.removePlayer(socketId);
+
+    // Remove from activeBots if it's a bot
+    const botIndex = activeBots.indexOf(socketId);
+    if (botIndex > -1) {
+        activeBots.splice(botIndex, 1);
+    }
+
+    // Check if only one player remains (win condition for single player mode)
+    const remainingPlayers = Object.keys(gameEngine.players).filter(id => !id.startsWith('bot-'));
+    if (remainingPlayers.length === 1) {
+        const winner = gameEngine.players[remainingPlayers[0]];
+        io.emit('chat_receive', {
+            user: 'SYSTEM',
+            msg: `🎉 VICTORY! ${winner.username} has conquered all enemies!`,
+            color: '#00ff00',
+        });
+        io.to(remainingPlayers[0]).emit('game_won');
+    }
 }
 
 // --- ECONOMY LOOP ---
@@ -205,6 +233,11 @@ setInterval(() => {
         const p = gameEngine.players[id];
         p.mp += p.mps;
         io.to(id).emit('update_self', p);
+    }
+
+    // Make AI decisions for active bots
+    if (activeBots.length > 0) {
+        aiEngine.makeDecisions(activeBots);
     }
 }, config.ECONOMY_TICK_MS);
 

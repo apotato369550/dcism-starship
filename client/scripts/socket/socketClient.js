@@ -36,6 +36,12 @@ export class SocketClient {
         });
     }
 
+    onGameWon(callback) {
+        this.socket.on('game_won', () => {
+            callback();
+        });
+    }
+
     onActionSuccess(callback) {
         this.socket.on('action_success', () => {
             callback();

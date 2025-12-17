@@ -13,6 +13,7 @@ export class GameState {
         this.map = data.map;
         this.shopData = data.shop;
         this.selectedTileIndex = data.you.homeIndex;
+        this.myId = data.you.id; // Store player ID for comparison
     }
 
     updateTile(tile) {

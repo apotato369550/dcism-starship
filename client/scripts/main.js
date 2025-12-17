@@ -79,6 +79,10 @@ socketClient.onGameOver(() => {
     document.getElementById('gameOverOverlay').classList.remove('hidden');
 });
 
+socketClient.onGameWon(() => {
+    document.getElementById('victoryOverlay').classList.remove('hidden');
+});
+
 socketClient.onActionSuccess(() => {
     audioManager.playSFX('action');
     uiManager.triggerCooldown(() => {

@@ -5,9 +5,8 @@ This guide explains how to deploy the DCISM Starship game to your production ser
 ## Prerequisites
 
 ### On Your Local Machine
-- Bash shell (macOS, Linux, or Windows WSL)
 - SSH client
-- `sed` command (for string replacement)
+- Terminal/Command line access
 
 ### On Your Production Server (web.dcism.org)
 - Node.js (v14+)
@@ -39,29 +38,82 @@ ssh -p 22077 s21103565@web.dcism.org "echo 'SSH access successful!'"
 # Should NOT ask for password
 ```
 
-## Deployment Steps
+## Manual Deployment Steps
 
-### Step 1: Make Deploy Script Executable
+### Step 1: SSH into the Server
 ```bash
-chmod +x deploy.sh
+ssh -p 22077 s21103565@web.dcism.org
 ```
 
-### Step 2: Run the Deployment Script
+### Step 2: Navigate to Deployment Folder
 ```bash
-./deploy.sh
+cd ~
+mkdir -p starship.dcism.org
+cd starship.dcism.org
 ```
 
-The script will:
-1. ✅ Confirm deployment details
-2. ✅ Connect to your server via SSH
-3. ✅ Clone the repository (first time) or pull latest changes
-4. ✅ Install npm dependencies
-5. ✅ Configure environment variables (set PORT=20145)
-6. ✅ Stop any existing PM2 processes
-7. ✅ Start the application with PM2
-8. ✅ Save PM2 configuration for auto-start on reboot
+### Step 3: Clone or Pull Repository
+**First time deployment:**
+```bash
+git clone https://github.com/apotato369550/dcism-starship.git .
+```
 
-### Step 3: Access Your Game
+**Subsequent deployments (pull latest):**
+```bash
+git pull origin main
+```
+
+### Step 4: Install Dependencies
+```bash
+npm install --production
+```
+
+### Step 5: Create or Update .env File
+```bash
+nano .env
+```
+
+Add or update the following:
+```
+# Map Settings
+MAP_WIDTH=20
+MAP_HEIGHT=20
+
+# Player Starting Values
+STARTING_ENERGY=10
+STARTING_ENERGY_PER_SEC=0
+
+# Timing (in milliseconds)
+COOLDOWN_MS=3000
+ECONOMY_TICK_MS=1000
+
+# Tile Defaults
+BASE_TILE_DEFENSE=1
+BASE_TILE_MAX_DEFENSE=1
+
+# Server
+PORT=20145
+```
+
+Save with `Ctrl+X` then `Y` then `Enter`.
+
+### Step 6: Stop Any Existing PM2 Processes
+```bash
+pm2 stop starship 2>/dev/null || true
+pm2 delete starship 2>/dev/null || true
+```
+
+### Step 7: Start the Application with PM2
+```bash
+pm2 start "npm start" --name starship
+pm2 save
+```
+
+### Step 8: Exit Server and Access Your Game
+```bash
+exit
+```
+
 Navigate to: `http://starship.dcism.org:20145`
 
 ## Managing the Application
@@ -106,25 +158,20 @@ pm2 show starship
 pm2 delete starship
 ```
 
-## Redeploying Updates
+## Updating to Latest Code
 
-To update with the latest code:
+To deploy updates:
 
 ```bash
-./deploy.sh
+ssh -p 22077 s21103565@web.dcism.org
+cd ~/starship.dcism.org
+git pull origin main
+npm install --production
+pm2 restart starship
+exit
 ```
-
-The script will:
-1. Pull the latest code from GitHub
-2. Update dependencies
-3. Restart the application
 
 ## Troubleshooting
-
-### Script Permission Denied
-```bash
-chmod +x deploy.sh
-```
 
 ### SSH Connection Failed
 - Verify SSH key is added to server: `ssh -p 22077 s21103565@web.dcism.org "ls -la .ssh"`
@@ -151,20 +198,6 @@ ssh -p 22077 s21103565@web.dcism.org
 sudo lsof -i :20145
 # Kill the process if needed
 sudo kill <PID>
-```
-
-### Manual Deployment (Without Script)
-
-If the script doesn't work, deploy manually:
-
-```bash
-ssh -p 22077 s21103565@web.dcism.org
-cd starship.dcism.org
-git clone https://github.com/apotato369550/dcism-starship.git . 2>/dev/null || git pull
-npm install --production
-# Update .env with PORT=20145
-pm2 start "npm start" --name starship
-pm2 save
 ```
 
 ## Environment Variables
