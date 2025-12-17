@@ -62,6 +62,8 @@ io.on('connection', socket => {
                     color: '#888',
                 });
             }
+            // Broadcast updated player list to all clients
+            io.emit('players_update', gameEngine.players);
         }
 
         socket.emit('init', { map: gameEngine.gameMap, you: player, shop: SHOP, players: gameEngine.players });

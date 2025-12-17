@@ -94,6 +94,11 @@ socketClient.onChatReceive(data => {
     uiManager.addChatMessage(data.user, data.msg, data.color);
 });
 
+socketClient.onPlayersUpdate(players => {
+    gameState.players = players;
+    console.log('[CLIENT] Players updated:', Object.keys(players).length, 'total players');
+});
+
 // Game mode and settings tracking
 let gameMode = null;
 let botCount = 0;

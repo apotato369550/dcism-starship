@@ -21,11 +21,11 @@ class AIEngine {
                 return;
             }
 
-            // Throttle decisions to avoid spam (one decision per 2 seconds max)
+            // Throttle decisions to avoid spam (one decision per 1.5 seconds max for more aggressive play)
             if (!this.botDecisions[botId]) {
                 this.botDecisions[botId] = 0;
             }
-            if (Date.now() - this.botDecisions[botId] < 2000) {
+            if (Date.now() - this.botDecisions[botId] < 1500) {
                 return; // Still in throttle period
             }
 
@@ -82,14 +82,14 @@ class AIEngine {
         // Find tiles adjacent to enemy territory that we can capture
         const captureOptions = this.findCaptureTargets(botId, nearestEnemy);
         if (captureOptions.length > 0) {
-            // Sort by defense cost (easier targets first, with some randomness for moderate difficulty)
+            // Sort by defense cost (easier targets first, with reduced randomness for more focused aggression)
             captureOptions.sort((a, b) => {
                 const costDiff = a.cost - b.cost;
-                return costDiff + (Math.random() - 0.5) * 20; // Add randomness
+                return costDiff + (Math.random() - 0.5) * 8; // Reduced randomness for more aggressive focus
             });
 
             const target = captureOptions[0];
-            if (bot.mp >= target.cost * 1.2) { // Need 20% more as safety margin
+            if (bot.mp >= target.cost * 1.05) { // Aggressive: only 5% safety margin
                 return {
                     type: 'capture',
                     tileIndex: target.index,
@@ -105,8 +105,8 @@ class AIEngine {
             return unit && unit.type === 'prod';
         });
 
-        // If we have enough energy, build something
-        if (bot.mp >= 50) {
+        // If we have enough energy, build something (aggressive: start at 25 energy)
+        if (bot.mp >= 25) {
             // Prefer production if we don't have much
             if (!hasProduction || bot.mp >= 150) {
                 // Try to build production on random owned tile
@@ -121,20 +121,33 @@ class AIEngine {
                 }
             }
 
-            // Build defense on front-line tiles or home
+            // Build defense on front-line tiles or home (lower priority for more aggression)
             const defTarget = this.findBuildTarget(botId, 'mil');
             if (defTarget) {
                 return {
                     type: 'build',
                     tileIndex: defTarget.index,
                     unitType: defTarget.unit,
-                    priority: 70,
+                    priority: 65, // Lower than capture (80) to prioritize offense
                 };
             }
         }
 
         // Generate energy if we're low and no good build target
+        // But first, try to attack cheap/undefended tiles if desperate
         if (bot.mp < 30) {
+            const cheapCaptures = this.findCaptureTargets(botId, nearestEnemy)
+                .filter(t => t.cost <= bot.mp + 5); // Can afford with current energy
+
+            if (cheapCaptures.length > 0) {
+                // Attack instead of generating if we can grab a cheap tile
+                return {
+                    type: 'capture',
+                    tileIndex: cheapCaptures[0].index,
+                    priority: 85, // Higher priority than generating
+                };
+            }
+
             return {
                 type: 'generate',
                 priority: 10,

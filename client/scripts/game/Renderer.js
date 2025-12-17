@@ -58,7 +58,7 @@ export class Renderer {
             if (tile.isHome && tile.owner === this.gameState.myId) {
                 this.ctx.strokeStyle = '#ffff00';
                 this.ctx.lineWidth = 4;
-                this.ctx.strokeRect(x - 2, y - 2, tileSize + 4, tileSize + 4);
+                this.ctx.strokeRect(x - 2, y - 2, this.baseSize + 4, this.baseSize + 4);
             }
 
             // Selection highlight

@@ -54,6 +54,12 @@ export class SocketClient {
         });
     }
 
+    onPlayersUpdate(callback) {
+        this.socket.on('players_update', data => {
+            callback(data);
+        });
+    }
+
     joinGame(username, options = {}) {
         this.socket.emit('join_game', { username, ...options });
     }
