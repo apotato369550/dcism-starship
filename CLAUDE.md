@@ -301,3 +301,36 @@ Always check before actions:
 2. Clears all victim's tiles from map
 3. Broadcasts tile updates to all players
 4. Removes player from `players` object
+
+## Subdirectory Documentation
+
+Each major subdirectory has its own CLAUDE.md file that serves as context for that module. These files are updated as features change and should be your first reference when working in that area:
+
+- **`server/CLAUDE.md`** - Backend architecture, game loop, Socket.IO events, win/lose conditions
+- **`server/services/CLAUDE.md`** - GameEngine and AIEngine implementation, strategy details
+- **`server/utils/CLAUDE.md`** - Geometry utilities, coordinate transformations, helper functions
+- **`client/scripts/CLAUDE.md`** - Frontend module organization, game state, input handlers, UI systems
+- **`client/styles/CLAUDE.md`** - CSS architecture, design system, component styling
+- **`config/CLAUDE.md`** - Unit definitions, game balance constants, tuning guide
+- **`shared/CLAUDE.md`** - Shared constants between client and server
+- **`tests/CLAUDE.md`** - Testing setup, test patterns, how to add tests
+
+**Best Practice**: When making changes to a module, update its corresponding CLAUDE.md file to document the change. This keeps documentation close to the code and ensures future developers understand the reasoning behind changes.
+
+## Recent Changes & Refactoring
+
+### Single-Player AI Implementation
+- **Added**: `server/services/AIEngine.js` - Autonomous bot decision-making
+- **Updated**: `server/index.js` - Integrated AI into game loop
+- **Updated**: `client/scripts/main.js` - Added game_won event handling
+- **Added**: Victory screen overlay in `client/index.html`
+- **Updated**: Renderer highlighting for player's capital (yellow border)
+
+See `server/services/CLAUDE.md` for AI strategy details and `server/CLAUDE.md` for win/lose condition implementation.
+
+## Future Improvements
+
+- **Difficulty Levels**: Modify AI strategy based on difficulty setting
+- **Multiplayer Support**: Currently single-player only; would need network synchronization
+- **Persistent State**: Save/load game state from database
+- **Replay System**: Record and playback game actions
