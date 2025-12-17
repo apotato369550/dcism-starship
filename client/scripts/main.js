@@ -43,6 +43,10 @@ socketClient.onConnect(myId => {
 
 socketClient.onInit(data => {
     gameState.init(data);
+    console.log('[CLIENT] Init received with', Object.keys(data.players).length, 'total players');
+    data.players && Object.entries(data.players).forEach(([id, p]) => {
+        console.log('  -', id, ':', p.username);
+    });
     uiManager.renderShop(buildModeActive => {
         // Build mode changed callback
         if (buildModeActive) {
@@ -63,6 +67,9 @@ socketClient.onInit(data => {
 
 socketClient.onMapUpdate(tile => {
     gameState.updateTile(tile);
+    if (tile.owner && tile.owner !== gameState.myId) {
+        console.log('[MAP] Tile', tile.id, 'owned by bot:', tile.owner, 'color:', tile.color);
+    }
     if (gameState.selectedTileIndex === tile.id) {
         uiManager.updateInspector(tile.id, tileIndex => {
             socketClient.demolishUnit(tileIndex);
@@ -97,6 +104,10 @@ socketClient.onChatReceive(data => {
 socketClient.onPlayersUpdate(players => {
     gameState.players = players;
     console.log('[CLIENT] Players updated:', Object.keys(players).length, 'total players');
+    Object.entries(players).forEach(([id, p]) => {
+        console.log('  -', id, ':', p.username);
+    });
+    renderer.render();
 });
 
 // Game mode and settings tracking
